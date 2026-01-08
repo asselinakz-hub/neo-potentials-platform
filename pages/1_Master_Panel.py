@@ -1,3 +1,8 @@
+import streamlit as st
+from auth import require_master_password
+
+require_master_password()
+
 import json
 import os
 import streamlit as st
