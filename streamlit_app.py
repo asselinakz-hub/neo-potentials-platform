@@ -73,8 +73,25 @@ for b in blocks:
         option_ids = []
 
         for opt in options:
-            pid = opt["potential_id"]
-            label = opt["label"]
+           # option can be {"potential_id": "..."} OR {"potential": "..."} OR {"potential": "Янтарь"} etc.
+pid = opt.get("potential_id") or opt.get("potential") or opt.get("id") or opt.get("code")
+label = opt.get("label") or opt.get("text") or opt.get("title") or str(pid)
+
+if pid is None:
+    continue
+    RU2ID = {
+  "Янтарь": "amber",
+  "Шунгит": "shungite",
+  "Цитрин": "citrine",
+  "Изумруд": "emerald",
+  "Рубин": "ruby",
+  "Гранат": "garnet",
+  "Сапфир": "sapphire",
+  "Гелиодор": "heliodor",
+  "Аметист": "amethyst",
+}
+
+pid = RU2ID.get(pid, pid)
             option_ids.append(pid)
             option_labels.append(f"{label}  ({potentials.get(pid, pid)})")
 
