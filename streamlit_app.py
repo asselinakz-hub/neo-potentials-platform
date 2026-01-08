@@ -25,8 +25,33 @@ if not os.path.exists(BLOCKS_PATH):
 
 blocks_data = load_json(BLOCKS_PATH)
 blocks = blocks_data.get("blocks", [])
-potentials = {p["potential_id"]: p["name"] for p in blocks_data.get("potentials", [])}
+# --- Potentials dictionary (safe) ---
+DEFAULT_POTENTIALS = {
+    "amber": "Янтарь",
+    "shungite": "Шунгит",
+    "citrine": "Цитрин",
+    "emerald": "Изумруд",
+    "ruby": "Рубин",
+    "garnet": "Гранат",
+    "sapphire": "Сапфир",
+    "heliodor": "Гелиодор",
+    "amethyst": "Аметист",
+}
 
+potentials_list = blocks_data.get("potentials", [])
+
+potentials = {}
+if isinstance(potentials_list, list):
+    for p in potentials_list:
+        if isinstance(p, dict):
+            pid = p.get("potential_id") or p.get("id") or p.get("code")
+            name = p.get("name") or p.get("title")
+            if pid and name:
+                potentials[str(pid)] = str(name)
+
+# fallback if file has no potentials section or wrong format
+if not potentials:
+    potentials = DEFAULT_POTENTIALS
 # storage for answers in session
 if "answers" not in st.session_state:
     st.session_state.answers = {}
