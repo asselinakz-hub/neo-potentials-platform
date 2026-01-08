@@ -108,3 +108,25 @@ else:
 st.divider()
 st.subheader("3) Файлы")
 st.code("\n".join(sorted(os.listdir("."))))
+def format_positions(report: dict) -> str:
+    m = report.get("matrix_3x3", {}) or {}
+    rows = [
+        ("1 ряд (СИЛЫ)", m.get("row1_strengths", {})),
+        ("2 ряд (ЭНЕРГИЯ)", m.get("row2_energy", {})),
+        ("3 ряд (СЛАБОСТИ)", m.get("row3_weaknesses", {})),
+    ]
+    cols = [("perception", "1 столбец"), ("motivation", "2 столбец"), ("instrument", "3 столбец")]
+
+    out = []
+    pos = 1
+    for rname, rmap in rows:
+        for ckey, cname in cols:
+            val = (rmap or {}).get(ckey)
+            if val:
+                out.append(f"{pos}) {rname} / {cname} — {val}")
+            else:
+                out.append(f"{pos}) {rname} / {cname} — (пусто)")
+            pos += 1
+    return "\n".join(out)
+    st.subheader("Результат (позиции текстом)")
+st.code(format_positions(report))
