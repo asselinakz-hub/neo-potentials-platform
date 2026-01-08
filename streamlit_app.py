@@ -2,304 +2,352 @@ import json
 import os
 import re
 import subprocess
-import time
 import streamlit as st
 
 BLOCKS_PATH = "neo_blocks.json"
-DATA_DIR = "data"
-RESP_DIR = os.path.join(DATA_DIR, "responses")
-REPORT_DIR = os.path.join(DATA_DIR, "reports")
-CLIENTS_PATH = os.path.join(DATA_DIR, "clients.json")
+RESPONSES_PATH = "responses.json"   # сохраняем ответы сюда (как ты просила)
+REPORT_PATH = "report.json"
 
-SCORING_SCRIPT = "neo_scoring.py"
-
-st.set_page_config(page_title="NEO Potentials — Диагностика", layout="wide")
-st.title("NEO Potentials — Диагностика")
-
-# -----------------------
-# Helpers
-# -----------------------
-def ensure_dirs():
-    os.makedirs(DATA_DIR, exist_ok=True)
-    os.makedirs(RESP_DIR, exist_ok=True)
-    os.makedirs(REPORT_DIR, exist_ok=True)
-
-def load_json(path):
+# ----------------------------
+# helpers
+# ----------------------------
+def load_json(path: str):
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
-def save_json(path, data):
+def save_json(path: str, data):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-def load_clients():
-    if not os.path.exists(CLIENTS_PATH):
-        return []
-    try:
-        return load_json(CLIENTS_PATH)
-    except Exception:
-        return []
-
-def save_clients(clients_list):
-    save_json(CLIENTS_PATH, clients_list)
-
 def slugify(s: str) -> str:
     s = (s or "").strip().lower()
-    s = re.sub(r"[^a-z0-9а-яё]+", "-", s, flags=re.IGNORECASE)
-    s = re.sub(r"-+", "-", s).strip("-")
-    return s or "client"
+    s = re.sub(r"\s+", "_", s)
+    s = re.sub(r"[^a-z0-9_]+", "", s)
+    return s
 
-def phone_digits(phone: str) -> str:
-    return re.sub(r"\D+", "", phone or "")
+RU2ID = {
+    "Янтарь": "amber",
+    "Шунгит": "shungite",
+    "Цитрин": "citrine",
+    "Изумруд": "emerald",
+    "Рубин": "ruby",
+    "Гранат": "garnet",
+    "Сапфир": "sapphire",
+    "Гелиодор": "heliodor",
+    "Аметист": "amethyst",
+}
 
-def build_client_id(name: str, phone: str) -> str:
-    # стабильный id: имя + последние 6 цифр
-    d = phone_digits(phone)
-    suffix = d[-6:] if len(d) >= 6 else d
-    return f"{slugify(name)}_{suffix or 'phone'}"
+def normalize_pid(x):
+    if x is None:
+        return None
+    x = str(x).strip()
+    return RU2ID.get(x, x)
 
-def flatten_questions(blocks_data):
-    """Возвращает список вопросов в порядке блоков."""
-    blocks = blocks_data.get("blocks", [])
-    items = []
-    for b in blocks:
-        b_code = b.get("block_code") or b.get("code") or b.get("block_id") or ""
-        b_name = b.get("block_name") or b.get("name") or ""
-        for q in b.get("questions", []):
-            items.append({
-                "block_id": b.get("block_id"),
-                "block_code": b_code,
-                "block_name": b_name,
-                "q": q
-            })
-    return items
+def qtype_norm(t: str) -> str:
+    t = (t or "").strip().lower()
+    # нормализуем варианты
+    if t in ("single_select", "radio"):
+        return "single_choice"
+    if t in ("multi_select", "multiple_choice"):
+        return "multi_choice"
+    if t in ("checkbox",):
+        return "checkbox"
+    return t
 
-def option_pid(opt: dict):
-    return opt.get("potential_id") or opt.get("potential") or opt.get("id") or opt.get("code")
+def is_multi(t: str) -> bool:
+    t = qtype_norm(t)
+    return t in ("multi_choice", "checkbox")
 
-def option_label(opt: dict):
-    return opt.get("label") or opt.get("text") or opt.get("title")
+def is_single(t: str) -> bool:
+    t = qtype_norm(t)
+    return t in ("single_choice",)
 
-# -----------------------
-# Init
-# -----------------------
-ensure_dirs()
+def get_potentials_dict(blocks_data):
+    """
+    поддерживаем 2 формата:
+    1) "potentials": { "amber": {"ru":"Янтарь","emoji":"..."} , ... }
+    2) "potentials": [ {"potential_id":"amber","name":"Янтарь"}, ... ]
+    """
+    p = blocks_data.get("potentials")
+    out = {}
+    if isinstance(p, dict):
+        for k, v in p.items():
+            if isinstance(v, dict):
+                ru = v.get("ru") or v.get("name") or v.get("title") or k
+            else:
+                ru = str(v)
+            out[str(k)] = str(ru)
+    elif isinstance(p, list):
+        for item in p:
+            if isinstance(item, dict):
+                pid = item.get("potential_id") or item.get("id") or item.get("code")
+                name = item.get("ru") or item.get("name") or item.get("title")
+                if pid and name:
+                    out[str(pid)] = str(name)
+    # fallback
+    if not out:
+        out = {
+            "amber": "Янтарь",
+            "shungite": "Шунгит",
+            "citrine": "Цитрин",
+            "emerald": "Изумруд",
+            "ruby": "Рубин",
+            "garnet": "Гранат",
+            "sapphire": "Сапфир",
+            "heliodor": "Гелиодор",
+            "amethyst": "Аметист",
+        }
+    return out
+
+def extract_option(opt):
+    """
+    Возвращает:
+    (label, option_id, potential_id)
+    """
+    if isinstance(opt, str):
+        # если опции просто строками
+        return opt, opt, None
+
+    if not isinstance(opt, dict):
+        return None, None, None
+
+    option_id = opt.get("id") or opt.get("option_id") or opt.get("code")
+    label = opt.get("label") or opt.get("text") or opt.get("title") or option_id
+
+    pid = (
+        opt.get("potential_id")
+        or opt.get("potential")
+        or opt.get("pid")
+        or opt.get("gem")
+        or opt.get("value")
+    )
+    pid = normalize_pid(pid)
+
+    # иногда option_id выглядит как opt_amber — вытащим потенциально pid
+    if (pid is None) and isinstance(option_id, str) and option_id.startswith("opt_"):
+        maybe = option_id.replace("opt_", "")
+        pid = normalize_pid(maybe)
+
+    return str(label) if label is not None else None, str(option_id) if option_id is not None else None, pid
+
+def run_scoring():
+    cmd = ["python", "neo_scoring.py", "--blocks", BLOCKS_PATH, "--answers", RESPONSES_PATH, "--out", REPORT_PATH]
+    return subprocess.run(cmd, capture_output=True, text=True)
+
+# ----------------------------
+# page config
+# ----------------------------
+st.set_page_config(page_title="NEO Potentials — Диагностика", layout="wide")
+st.title("NEO Potentials — Диагностика")
 
 if not os.path.exists(BLOCKS_PATH):
-    st.error(f"Не найден файл {BLOCKS_PATH} в корне репозитория.")
+    st.error(f"Не найден файл {BLOCKS_PATH}.")
     st.stop()
 
 blocks_data = load_json(BLOCKS_PATH)
-questions = flatten_questions(blocks_data)
+potentials = get_potentials_dict(blocks_data)
+blocks = blocks_data.get("blocks", [])
 
-if not questions:
-    st.error("В neo_blocks.json не найдены вопросы (blocks[].questions[] пусто).")
-    st.stop()
-
-# session state
-if "step" not in st.session_state:
-    st.session_state.step = 0  # 0 = форма клиента, 1..N = вопросы
-if "client" not in st.session_state:
-    st.session_state.client = {"name": "", "phone": "", "client_id": ""}
 if "answers" not in st.session_state:
-    st.session_state.answers = {}  # {qid: {selected:[...], text, note}}
-if "saved_paths" not in st.session_state:
-    st.session_state.saved_paths = {"responses": None, "report": None}
+    st.session_state.answers = {}
+if "step" not in st.session_state:
+    st.session_state.step = 0
+if "respondent" not in st.session_state:
+    st.session_state.respondent = {"name": "", "phone": "", "client_id": ""}
 
-total_q = len(questions)
+# ----------------------------
+# respondent info
+# ----------------------------
+with st.expander("Ваши данные (имя и телефон)"):
+    name = st.text_input("Имя", value=st.session_state.respondent.get("name", ""))
+    phone = st.text_input("Телефон", value=st.session_state.respondent.get("phone", ""))
+    if st.button("Сохранить данные"):
+        st.session_state.respondent["name"] = name.strip()
+        st.session_state.respondent["phone"] = phone.strip()
+        cid = slugify(f"{name}_{phone}") or "client"
+        st.session_state.respondent["client_id"] = cid
+        st.success("Сохранено ✅")
 
-# -----------------------
-# Step 0: client info
-# -----------------------
-if st.session_state.step == 0:
-    st.subheader("Данные клиента")
+# ----------------------------
+# flatten questions
+# ----------------------------
+flat = []
+for b in blocks:
+    bcode = b.get("block_code") or b.get("block_id") or "B?"
+    bname = b.get("block_name") or b.get("name") or ""
+    for q in b.get("questions", []):
+        qid = q.get("id")
+        if not qid:
+            continue
+        flat.append((bcode, bname, q))
 
-    name = st.text_input("Имя клиента*", value=st.session_state.client.get("name", ""))
-    phone = st.text_input("Телефон*", value=st.session_state.client.get("phone", ""), help="Можно с пробелами/скобками — мы сами почистим.")
-
-    colA, colB = st.columns([1, 2])
-    with colA:
-        if st.button("Начать диагностику ➜"):
-            if not name.strip():
-                st.error("Введите имя клиента.")
-                st.stop()
-            if len(phone_digits(phone)) < 7:
-                st.error("Введите корректный телефон (минимум 7 цифр).")
-                st.stop()
-
-            cid = build_client_id(name, phone)
-            st.session_state.client = {"name": name.
-strip(), "phone": phone.strip(), "client_id": cid}
-
-            # register in clients.json
-            clients = load_clients()
-            now = int(time.time())
-            # update or append
-            found = False
-            for c in clients:
-                if c.get("client_id") == cid:
-                    c["name"] = name.strip()
-                    c["phone"] = phone.strip()
-                    c["updated_at"] = now
-                    found = True
-                    break
-            if not found:
-                clients.append({"client_id": cid, "name": name.strip(), "phone": phone.strip(), "created_at": now, "updated_at": now})
-            save_clients(clients)
-
-            st.session_state.step = 1
-            st.rerun()
-
-    st.caption("После заполнения нажми Начать диагностику — вопросы пойдут по одному, с прогрессом.")
+total = len(flat)
+if total == 0:
+    st.error("В neo_blocks.json не найдено вопросов (blocks[].questions[]).")
     st.stop()
 
-# -----------------------
-# Wizard UI: steps 1..N
-# -----------------------
-idx = st.session_state.step - 1
-idx = max(0, min(idx, total_q - 1))
+# clamp step
+st.session_state.step = max(0, min(st.session_state.step, total - 1))
+idx = st.session_state.step
 
-progress = (idx + 1) / total_q
-st.progress(progress, text=f"Вопрос {idx+1} из {total_q}")
+# progress
+st.progress((idx + 1) / total)
+st.caption(f"Вопрос {idx + 1} из {total}")
 
-meta = questions[idx]
-q = meta["q"]
+bcode, bname, q = flat[idx]
 qid = q.get("id")
-qtype = (q.get("type") or "").strip().lower()
-prompt = q.get("prompt") or ""
+qtype = qtype_norm(q.get("type"))
+prompt = q.get("prompt") or q.get("text") or q.get("title") or qid
 
-st.markdown(f"### {meta['block_code']}. {meta['block_name']}")
+st.subheader(f"{bcode}. {bname}")
 st.write(prompt)
 
-# load previous answer if any
-prev = st.session_state.answers.get(qid, {})
-prev_selected = prev.get("selected", [])
-prev_text = prev.get("text", "")
-prev_note = prev.get("note", "")
-
+# ----------------------------
+# render one question
+# ----------------------------
 options = q.get("options", []) or []
 labels = []
-ids = []
+pids = []   # будем сохранять potential_id (если есть), иначе option_id
 
 for opt in options:
-    pid = option_pid(opt)
-    lbl = option_label(opt) or pid
-    if pid is None:
+    label, option_id, pid = extract_option(opt)
+    if not label:
         continue
-    labels.append(str(lbl))
-    ids.append(str(pid))
 
-# Render by type
-if qtype in ("single_choice", "single_select", "radio"):
-    # determine default index
-    default_idx = None
-    if prev_selected:
+    final_id = pid or option_id or label
+    final_id = normalize_pid(final_id)
+
+    # красивый label
+    ru = potentials.get(final_id, "")
+    if ru and ru != final_id:
+        labels.append(f"{label} — {ru}")
+    else:
+        labels.append(str(label))
+
+    pids.append(final_id)
+
+key = f"q_{qid}"
+
+# предыдущие значения
+prev = st.session_state.answers.get(qid, {})
+prev_sel = prev.get("selected", [])
+if isinstance(prev_sel, str):
+    prev_sel = [prev_sel]
+if prev_sel is None:
+    prev_sel = []
+
+if is_single(qtype):
+    # индекс по prev
+    default_index = None
+    if prev_sel:
         try:
-            # match by pid
-            pi = ids.index(prev_selected[0])
-            default_idx = pi
+            default_index = pids.index(prev_sel[0])
         except Exception:
-            default_idx = None
+            default_index = None
 
-    choice = st.radio(
-        "Выберите 1 вариант:",
-        options=list(range(len(labels))),
-        format_func=lambda i: labels[i],
-        index=default_idx
-    )
+    choice = st.radio("Выберите 1 вариант:", labels, index=default_index, key=key)
+    if choice is not None:
+        i = labels.index(choice)
+        st.session_state.answers[qid] = {"selected": [pids[i]]}
 
-    st.session_state.answers[qid] = {"selected": [ids[choice]]}
+elif is_multi(qtype):
+    defaults = []
+    for s in prev_sel:
+        if s in pids:
+            defaults.append(s)
 
-elif qtype in ("multi_choice", "multi_select", "checkbox", "multiple_choice"):
-    max_choices = q.get("max_choices")
-    # default selections by indexes
-    default_idxs = []
-    for s in prev_selected:
-        if s in ids:
-            default_idxs.append(ids.index(s))
+    # multiselect сразу позволяет выбрать несколько — без “кликни ещё раз”
+    chosen_labels = []
+    if defaults:
+        # превратим defaults -> labels
+        for d in defaults:
+            try:
+                chosen_labels.append(labels[pids.index(d)])
+            except Exception:
+                pass
 
-    chosen_idxs = st.multiselect(
-        f"Выберите варианты{f' (макс {max_choices})' if max_choices else ''}:",
-        options=list(range(len(labels))),
-        default=default_idxs,
-        format_func=lambda i: labels[i],
-    )
-    selected_ids = [ids[i] for i in chosen_idxs]
-    if max_choices:
-        selected_ids = selected_ids[: int(max_choices)]
-    st.session_state.answers[qid] = {"selected": selected_ids}
+    chosen = st.multiselect("Выберите варианты:", labels, default=chosen_labels, key=key)
+    selected = []
+    for lab in chosen:
+        i = labels.index(lab)
+        selected.append(pids[i])
+
+    st.session_state.answers[qid] = {"selected": selected}
+
+elif qtype == "scale":
+    # универсально: min/max/step
+    mn = int(q.get("min", 1))
+    mx = int(q.get("max", 10))
+    step = int(q.get("step", 1))
+    prev_val = prev.get("value")
+    if prev_val is None:
+        prev_val = mn
+    val = st.slider("Оценка:", mn, mx, int(prev_val), step=step, key=key)
+    st.session_state.answers[qid] = {"value": val}
 
 elif qtype == "text":
-    txt = st.text_area("Введите ответ:", value=prev_text, height=160)
+    prev_text = prev.get("text", "")
+    txt = st.text_area("Введите ответ:", value=prev_text, key=key)
     st.session_state.answers[qid] = {"text": txt}
 
 else:
-    st.warning(f"Тип вопроса '{qtype}' пока не поддержан. Пропускаю.")
-    st.session_state.answers[qid] = prev or {}
+    st.warning(f"Тип вопроса '{qtype}' пока не поддержан — пропускаю.")
+    st.session_state.answers.setdefault(qid, {})
 
-# optional text_field note
-if bool(q.get("text_field", False)):
-    note = st.text_input("Комментарий (необязательно):", value=prev_note)
+# optional note
+if q.get("text_field", False):
+    prev_note = st.session_state.answers.get(qid, {}).get("note", "")
+    note = st.text_input("Комментарий (необязательно):", value=prev_note, key=f"note_{qid}")
     st.session_state.answers.setdefault(qid, {})
     st.session_state.answers[qid]["note"] = note
 
+# ----------------------------
 # navigation buttons
-nav1, nav2, nav3, nav4 = st.columns([1, 1, 1, 2])
+# ----------------------------
+c1, c2, c3, c4 = st.columns([1, 1, 1, 2])
 
-with nav1:
+with c1:
     if st.button("⬅ Назад", disabled=(idx == 0)):
-        st.session_state.step = max(1, st.session_state.step - 1)
+        st.session_state.step = max(0, idx - 1)
         st.rerun()
 
-with nav2:
-    if st.button("Далее ➜", disabled=(idx >= total_q - 1)):
-        st.session_state.step = min(total_q, st.session_state.step + 1)
+with c2:
+    if st.button("Далее ➡", disabled=(idx >= total - 1)):
+        st.session_state.step = min(total - 1, idx + 1)
         st.rerun()
 
-with nav3:
+with c3:
     if st.button("💾 Save"):
-        # save per client
-        c = st.session_state.client
         payload = {
-            "respondent": c,
-            "respondent_id": c["client_id"],
-            "answers": st.
-session_state.answers,
-        }
-        resp_path = os.path.join(RESP_DIR, f"{c['client_id']}.json")
-        save_json(resp_path, payload)
-        st.session_state.saved_paths["responses"] = resp_path
-        st.success(f"Сохранено: {resp_path}")
-
-with nav4:
-    if st.button("✅ Finish & Run scoring", disabled=(idx != total_q - 1)):
-        c = st.session_state.client
-        payload = {
-            "respondent": c,
-            "respondent_id": c["client_id"],
+            "respondent": {
+                "name": st.session_state.respondent.get("name", ""),
+                "phone": st.session_state.respondent.get("phone", ""),
+                "client_id": st.session_state.respondent.get("client_id", ""),
+            },
+            "respondent_id": st.session_state.respondent.get("client_id") or "demo_user",
             "answers": st.session_state.answers,
         }
-        resp_path = os.path.join(RESP_DIR, f"{c['client_id']}.json")
-        report_path = os.path.join(REPORT_DIR, f"{c['client_id']}.json")
-        save_json(resp_path, payload)
+        save_json(RESPONSES_PATH, payload)
+        st.success(f"Сохранила {RESPONSES_PATH}")
 
-        cmd = ["python", SCORING_SCRIPT, "--blocks", BLOCKS_PATH, "--answers", resp_path, "--out", report_path]
-        result = subprocess.run(cmd, capture_output=True, text=True)
+with c4:
+    if st.button("✅ Finish & Run scoring", disabled=(idx < total - 1)):
+        payload = {
+            "respondent": {
+                "name": st.session_state.respondent.get("name", ""),
+                "phone": st.session_state.respondent.get("phone", ""),
+                "client_id": st.session_state.respondent.get("client_id", ""),
+            },
+            "respondent_id": st.session_state.respondent.get("client_id") or "demo_user",
+            "answers": st.session_state.answers,
+        }
+        save_json(RESPONSES_PATH, payload)
 
-        if result.returncode != 0:
+        res = run_scoring()
+        if res.returncode != 0:
             st.error("Ошибка при скоринге:")
-            st.code(result.stderr or result.stdout)
+            st.code(res.stderr or res.stdout)
         else:
-            st.success("Готово! Отчёт сформирован.")
-            st.session_state.saved_paths["responses"] = resp_path
-            st.session_state.saved_paths["report"] = report_path
-
-            # show report nicely (минимально)
-            rep = load_json(report_path)
-            st.divider()
-            st.subheader("Результат (черновой вид)")
-            st.write(f"Клиент: {c['name']}, тел: **{c['phone']}**")
-            st.json(rep)
-
-            with open(report_path, "rb") as f:
-                st.download_button("⬇️ Скачать report.json", data=f, file_name=f"{c['client_id']}_report.json", mime="application/json")
+            st.success("Скоринг выполнен ✅")
+            if os.path.exists(REPORT_PATH):
+                st.info("Отчёт будет доступен в мастер-панели (для мастера).")
