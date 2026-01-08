@@ -243,7 +243,8 @@ with c2:
         else:
             # FINISH: save + score
             client_id = st.session_state.respondent["client_id"]
-            client_dir = os.path.join(DATA_DIR, client_id)
+            client_dir = os.path.join(DATA_DIR, "clients", client_id)
+os.makedirs(client_dir, exist_ok=True)
             responses_path = os.path.join(client_dir, "responses.json")
             report_path = os.path.join(client_dir, "report.json")
 
