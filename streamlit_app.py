@@ -3,13 +3,14 @@ import os
 import re
 import streamlit as st
 
-from neo_scoring import score_blocks  # используем твою scoring-функцию
+from neo_scoring import score_blocks
 
 BLOCKS_PATH = "neo_blocks.json"
 DATA_DIR = "data"  # тут будут папки клиентов
+CLIENTS_DIR = os.path.join(DATA_DIR, "clients")
+os.makedirs(CLIENTS_DIR, exist_ok=True)
 
 st.set_page_config(page_title="NEO Potentials — Диагностика", layout="centered")
-
 
 # -------------------------
 # Helpers
