@@ -1,132 +1,92 @@
 import json
 import os
 import streamlit as st
-from auth import is_master
-
-if not is_master():
-    st.stop()
 
 DATA_DIR = "data"
-CLIENTS_PATH = os.path.join(DATA_DIR, "clients.json")
-RESP_DIR = os.path.join(DATA_DIR, "responses")
-REPORT_DIR = os.path.join(DATA_DIR, "reports")
 BLOCKS_PATH = "neo_blocks.json"
 
 st.set_page_config(page_title="Master Panel — NEO", layout="wide")
 st.title("🛠️ Master Panel — NEO Potentials")
 
+
 def load_json(path: str):
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
-def save_json(path: str, data):
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
 
-os.makedirs(DATA_DIR, exist_ok=True)
-os.makedirs(RESP_DIR, exist_ok=True)
-os.makedirs(REPORT_DIR, exist_ok=True)
-
-# ---- Clients ----
-clients = []
-if os.path.exists(CLIENTS_PATH):
-    try:
-        clients = load_json(CLIENTS_PATH)
-    except Exception:
-        clients = []
-
-st.subheader("1) Клиенты")
-if not clients:
-    st.info("Пока нет клиентов. Сначала пройди диагностику на главной странице.")
-else:
-    # simple selector
-    options = {f"{c.get('name','')} — {c.get('phone','')} ({c.get('client_id')})": c for c in clients}
-    chosen_label = st.selectbox("Выбери клиента:", list(options.keys()))
-    c = options[chosen_label]
-    cid = c["client_id"]
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.markdown("### responses")
-        resp_path = os.path.join(RESP_DIR, f"{cid}.json")
-        if os.path.exists(resp_path):
-            st.json(load_json(resp_path))
-        else:
-            st.info("responses пока нет")
-
-    with col2:
-        st.markdown("### report")
-        rep_path = os.path.join(REPORT_DIR, f"{cid}.json")
-        if os.path.exists(rep_path):
-            st.json(load_json(rep_path))
-            with open(rep_path, "rb") as f:
-                st.download_button("⬇️ Скачать report.json", data=f, file_name=f"{cid}_report.json", mime="application/json")
-        else:
-            st.info("report пока нет")
-
-st.divider()
-
-# ---- blocks editor ----
-st.subheader("2) Редактор neo_blocks.json")
-if not os.path.exists(BLOCKS_PATH):
-    st.error("neo_blocks.json не найден в корне репозитория.")
-else:
-    try:
-        blocks_data = load_json(BLOCKS_PATH)
-        blocks_text_default = json.dumps(blocks_data, ensure_ascii=False, indent=2)
-    except Exception as e:
-        st.error("neo_blocks.json битый.")
-        st.code(str(e))
-        st.stop()
-
-    blocks_text = st.text_area("neo_blocks.json", value=blocks_text_default, height=420)
-
-    c1, c2, c3 = st.columns(3)
-    with c1:
-        if st.button("✅ Validate JSON"):
-            try:
-                json.loads(blocks_text)
-                st.success("JSON валидный ✅")
-            except Exception as e:
-                st.error("JSON невалидный ❌")
-                st.code(str(e))
-
-    with c2:
-        if st.button("💾 Save neo_blocks.json"):
-            try:
-                parsed = json.loads(blocks_text)
-                save_json(BLOCKS_PATH, parsed)
-                st.success("Сохранено ✅")
-            except Exception as e:
-                st.error("Не сохранилось")
-                st.code(str(e))
-
-    with c3:
-        st.download_button("⬇️ Download neo_blocks.json", data=blocks_text.encode("utf-8"), file_name="neo_blocks.json", mime="application/json")
-
-st.divider()
-st.subheader("3) Файлы")
-st.code("\n".join(sorted(os.listdir("."))))
-def format_positions(report: dict) -> str:
-    m = report.get("matrix_3x3", {}) or {}
-    rows = [
-        ("1 ряд (СИЛЫ)", m.get("row1_strengths", {})),
-        ("2 ряд (ЭНЕРГИЯ)", m.get("row2_energy", {})),
-        ("3 ряд (СЛАБОСТИ)", m.get("row3_weaknesses", {})),
-    ]
-    cols = [("perception", "1 столбец"), ("motivation", "2 столбец"), ("instrument", "3 столбец")]
-
+def list_clients():
+    if not os.path.exists(DATA_DIR):
+        return []
     out = []
-    pos = 1
-    for rname, rmap in rows:
-        for ckey, cname in cols:
-            val = (rmap or {}).get(ckey)
-            if val:
-                out.append(f"{pos}) {rname} / {cname} — {val}")
-            else:
-                out.append(f"{pos}) {rname} / {cname} — (пусто)")
-            pos += 1
-    return "\n".join(out)
-    st.subheader("Результат (позиции текстом)")
-st.code(format_positions(report))
+    for name in sorted(os.listdir(DATA_DIR)):
+        p = os.path.join(DATA_DIR, name)
+        if os.path.isdir(p):
+            out.append(name)
+    return out
+
+
+def format_matrix_positions(report: dict) -> str:
+    m = report.get("matrix_3x3", {})
+    rows = [
+        ("РЯД 1 (СИЛЫ)", m.get("row1_strengths", {})),
+        ("РЯД 2 (ЭНЕРГИЯ)", m.get("row2_energy", {})),
+        ("РЯД 3 (СЛАБОСТИ)", m.get("row3_weaknesses", {})),
+    ]
+    cols = ["perception", "motivation", "instrument"]
+
+    lines = []
+    for title, row in rows:
+        lines.append(title)
+        for c in cols:
+            val = row.get(c) or "-"
+            lines.append(f"  • {c}: {val}")
+        lines.append("")
+    return "\n".join(lines).strip()
+
+
+clients = list_clients()
+
+if not clients:
+    st.info("Пока нет клиентов. Клиент должен пройти диагностику на главной странице.")
+    st.stop()
+
+selected = st.selectbox("Выбери клиента", clients)
+
+client_dir = os.path.join(DATA_DIR, selected)
+responses_path = os.path.join(client_dir, "responses.json")
+report_path = os.path.join(client_dir, "report.json")
+
+col1, col2 = st.columns([1, 1])
+
+with col1:
+    st.subheader("Клиент")
+    if os.path.exists(responses_path):
+        r = load_json(responses_path)
+        resp = r.get("respondent", {})
+        st.write(f"**Имя:** {resp.get('name','-')}")
+        st.write(f"**Телефон:** {resp.get('phone','-')}")
+        st.write(f"**Client ID:** `{r.get('respondent_id','-')}`")
+    else:
+        st.warning("responses.json не найден у клиента.")
+
+with col2:
+    st.subheader("Результат (текстом)")
+    if os.path.exists(report_path):
+        report = load_json(report_path)
+
+        # 1) коротко: топы по рядам
+        rows = report.get("rows", {})
+        st.write("**Ряд 1 (силы):** " + ", ".join(rows.get("row1_strengths", [])))
+        st.write("**Ряд 2 (энергия):** " + ", ".join(rows.get("row2_energy", [])))
+        st.write("**Ряд 3 (слабости):** " + ", ".join(rows.get("row3_weaknesses", [])))
+
+        st.divider()
+
+        # 2) позиционирование 3×3 текстом
+        st.code(format_matrix_positions(report))
+
+        # 3) скачать json если нужно
+        with open(report_path, "rb") as f:
+            st.download_button("⬇️ Скачать report.json", data=f, file_name=f"{selected}_report.json")
+    else:
+        st.info("report.json пока нет. Значит клиент не завершил тест до конца.")
