@@ -1,8 +1,15 @@
 import os
 import json
+import sys
+from pathlib import Path
 import streamlit as st
 
-# ✅ пароль мастера (файл auth.py должен быть в корне)
+# ✅ гарантируем, что корень репозитория в sys.path
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+# ✅ импорт пароля мастера
 from auth import require_master_password
 
 require_master_password()
