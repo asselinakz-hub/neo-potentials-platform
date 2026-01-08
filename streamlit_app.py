@@ -1,324 +1,261 @@
 import json
 import os
 import re
-import subprocess
 import streamlit as st
 
-BLOCKS_PATH = "neo_blocks.json"
-RESPONSES_PATH = "responses.json"   # сохраняем ответы сюда (как ты просила)
-REPORT_PATH = "report.json"
+from neo_scoring import score_blocks  # используем твою scoring-функцию
 
-# ----------------------------
-# helpers
-# ----------------------------
+BLOCKS_PATH = "neo_blocks.json"
+DATA_DIR = "data"  # тут будут папки клиентов
+
+st.set_page_config(page_title="NEO Potentials — Диагностика", layout="centered")
+
+
+# -------------------------
+# Helpers
+# -------------------------
 def load_json(path: str):
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
+
 def save_json(path: str, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
+
 def slugify(s: str) -> str:
-    s = (s or "").strip().lower()
+    s = s.strip().lower()
     s = re.sub(r"\s+", "_", s)
-    s = re.sub(r"[^a-z0-9_]+", "", s)
-    return s
+    s = re.sub(r"[^a-z0-9_а-яё-]", "", s, flags=re.IGNORECASE)
+    return s or "client"
 
-RU2ID = {
-    "Янтарь": "amber",
-    "Шунгит": "shungite",
-    "Цитрин": "citrine",
-    "Изумруд": "emerald",
-    "Рубин": "ruby",
-    "Гранат": "garnet",
-    "Сапфир": "sapphire",
-    "Гелиодор": "heliodor",
-    "Аметист": "amethyst",
-}
 
-def normalize_pid(x):
-    if x is None:
-        return None
-    x = str(x).strip()
-    return RU2ID.get(x, x)
+def normalize_phone(p: str) -> str:
+    digits = re.sub(r"\D+", "", (p or ""))
+    return digits
 
-def qtype_norm(t: str) -> str:
-    t = (t or "").strip().lower()
-    # нормализуем варианты
-    if t in ("single_select", "radio"):
-        return "single_choice"
-    if t in ("multi_select", "multiple_choice"):
-        return "multi_choice"
-    if t in ("checkbox",):
-        return "checkbox"
-    return t
 
-def is_multi(t: str) -> bool:
-    t = qtype_norm(t)
-    return t in ("multi_choice", "checkbox")
+def get_opt_label(opt: dict) -> str:
+    # показываем клиенту только "человеческий" текст
+    return str(
+        opt.get("label")
+        or opt.get("text")
+        or opt.get("title")
+        or opt.get("name")
+        or ""
+    ).strip()
 
-def is_single(t: str) -> bool:
-    t = qtype_norm(t)
-    return t in ("single_choice",)
 
-def get_potentials_dict(blocks_data):
-    """
-    поддерживаем 2 формата:
-    1) "potentials": { "amber": {"ru":"Янтарь","emoji":"..."} , ... }
-    2) "potentials": [ {"potential_id":"amber","name":"Янтарь"}, ... ]
-    """
-    p = blocks_data.get("potentials")
-    out = {}
-    if isinstance(p, dict):
-        for k, v in p.items():
-            if isinstance(v, dict):
-                ru = v.get("ru") or v.get("name") or v.get("title") or k
-            else:
-                ru = str(v)
-            out[str(k)] = str(ru)
-    elif isinstance(p, list):
-        for item in p:
-            if isinstance(item, dict):
-                pid = item.get("potential_id") or item.get("id") or item.get("code")
-                name = item.get("ru") or item.get("name") or item.get("title")
-                if pid and name:
-                    out[str(pid)] = str(name)
-    # fallback
-    if not out:
-        out = {
-            "amber": "Янтарь",
-            "shungite": "Шунгит",
-            "citrine": "Цитрин",
-            "emerald": "Изумруд",
-            "ruby": "Рубин",
-            "garnet": "Гранат",
-            "sapphire": "Сапфир",
-            "heliodor": "Гелиодор",
-            "amethyst": "Аметист",
-        }
-    return out
-
-def extract_option(opt):
-    """
-    Возвращает:
-    (label, option_id, potential_id)
-    """
-    if isinstance(opt, str):
-        # если опции просто строками
-        return opt, opt, None
-
-    if not isinstance(opt, dict):
-        return None, None, None
-
-    option_id = opt.get("id") or opt.get("option_id") or opt.get("code")
-    label = opt.get("label") or opt.get("text") or opt.get("title") or option_id
-
-    pid = (
+def get_opt_pid(opt: dict):
+    # id/код опции (для скоринга)
+    return (
         opt.get("potential_id")
         or opt.get("potential")
-        or opt.get("pid")
-        or opt.get("gem")
+        or opt.get("id")
+        or opt.get("code")
         or opt.get("value")
     )
-    pid = normalize_pid(pid)
 
-    # иногда option_id выглядит как opt_amber — вытащим потенциально pid
-    if (pid is None) and isinstance(option_id, str) and option_id.startswith("opt_"):
-        maybe = option_id.replace("opt_", "")
-        pid = normalize_pid(maybe)
 
-    return str(label) if label is not None else None, str(option_id) if option_id is not None else None, pid
+def flatten_questions(blocks: list) -> list:
+    items = []
+    for b in blocks:
+        for q in b.get("questions", []):
+            items.append({"block": b, "q": q})
+    return items
 
-def run_scoring():
-    cmd = ["python", "neo_scoring.py", "--blocks", BLOCKS_PATH, "--answers", RESPONSES_PATH, "--out", REPORT_PATH]
-    return subprocess.run(cmd, capture_output=True, text=True)
 
-# ----------------------------
-# page config
-# ----------------------------
-st.set_page_config(page_title="NEO Potentials — Диагностика", layout="wide")
-st.title("NEO Potentials — Диагностика")
-
+# -------------------------
+# Load blocks
+# -------------------------
 if not os.path.exists(BLOCKS_PATH):
-    st.error(f"Не найден файл {BLOCKS_PATH}.")
+    st.error(f"Не найден {BLOCKS_PATH} в корне репозитория.")
     st.stop()
 
 blocks_data = load_json(BLOCKS_PATH)
-potentials = get_potentials_dict(blocks_data)
 blocks = blocks_data.get("blocks", [])
+questions = flatten_questions(blocks)
+total = len(questions)
+
+if total == 0:
+    st.error("В neo_blocks.json нет вопросов.")
+    st.stop()
+
+
+# -------------------------
+# Session state init
+# -------------------------
+if "step" not in st.session_state:
+    st.session_state.step = 0
 
 if "answers" not in st.session_state:
     st.session_state.answers = {}
-if "step" not in st.session_state:
-    st.session_state.step = 0
+
 if "respondent" not in st.session_state:
     st.session_state.respondent = {"name": "", "phone": "", "client_id": ""}
 
-# ----------------------------
-# respondent info
-# ----------------------------
-with st.expander("Ваши данные (имя и телефон)"):
+if "started" not in st.session_state:
+    st.session_state.started = False
+
+
+# -------------------------
+# START SCREEN (name + phone only once)
+# -------------------------
+if not st.session_state.started:
+    st.title("NEO Potentials — Диагностика")
+    st.write("Введите имя и телефон — дальше они показываться не будут.")
+
     name = st.text_input("Имя", value=st.session_state.respondent.get("name", ""))
     phone = st.text_input("Телефон", value=st.session_state.respondent.get("phone", ""))
-    if st.button("Сохранить данные"):
-        st.session_state.respondent["name"] = name.strip()
-        st.session_state.respondent["phone"] = phone.strip()
-        cid = slugify(f"{name}_{phone}") or "client"
-        st.session_state.respondent["client_id"] = cid
-        st.success("Сохранено ✅")
 
-# ----------------------------
-# flatten questions
-# ----------------------------
-flat = []
-for b in blocks:
-    bcode = b.get("block_code") or b.get("block_id") or "B?"
-    bname = b.get("block_name") or b.get("name") or ""
-    for q in b.get("questions", []):
-        qid = q.get("id")
-        if not qid:
-            continue
-        flat.append((bcode, bname, q))
+    if st.button("Начать"):
+        name_clean = (name or "").strip()
+        phone_clean = normalize_phone(phone)
 
-total = len(flat)
-if total == 0:
-    st.error("В neo_blocks.json не найдено вопросов (blocks[].questions[]).")
+        if not name_clean:
+            st.error("Введите имя.")
+            st.stop()
+
+        # телефон можно оставить пустым, но лучше чтобы был
+        client_id = slugify(name_clean)
+        if phone_clean:
+            client_id = f"{client_id}_{phone_clean}"
+
+        st.session_state.respondent = {
+            "name": name_clean,
+            "phone": phone_clean,
+            "client_id": client_id,
+        }
+        st.session_state.started = True
+        st.session_state.step = 0
+        st.rerun()
+
     st.stop()
 
-# clamp step
-st.session_state.step = max(0, min(st.session_state.step, total - 1))
+
+# -------------------------
+# QUESTION SCREEN (one per page)
+# -------------------------
 idx = st.session_state.step
+idx = max(0, min(idx, total - 1))
+st.session_state.step = idx
+
+item = questions[idx]
+block = item["block"]
+q = item["q"]
+
+qid = q.get("id")
+qtype = str(q.get("type", "")).strip().lower()
+prompt = str(q.get("prompt", "")).strip()
 
 # progress
 st.progress((idx + 1) / total)
 st.caption(f"Вопрос {idx + 1} из {total}")
 
-bcode, bname, q = flat[idx]
-qid = q.get("id")
-qtype = qtype_norm(q.get("type"))
-prompt = q.get("prompt") or q.get("text") or q.get("title") or qid
-
+# big question text
 st.markdown(
-    f"<h2 style='text-align:center'>{q['prompt']}</h2>",
+    f"<h2 style='text-align:center; line-height:1.25'>{prompt}</h2>",
     unsafe_allow_html=True
 )
 
-# ----------------------------
-# render one question
-# ----------------------------
+# prepare options
 options = q.get("options", []) or []
 labels = []
-pids = []   # будем сохранять potential_id (если есть), иначе option_id
+pids = []
 
 for opt in options:
-    label, option_id, pid = extract_option(opt)
-    if not label:
+    if not isinstance(opt, dict):
         continue
+    pid = get_opt_pid(opt)
+    label = get_opt_label(opt)
+    if pid is None:
+        continue
+    if not label:
+        label = str(pid)
+    labels.append(label)
+    pids.append(pid)
 
-    final_id = pid or option_id or label
-    final_id = normalize_pid(final_id)
+# render input
+key = f"ans_{qid}"
 
-    # красивый label
-    ru = potentials.get(final_id, "")
-    if ru and ru != final_id:
-        labels.append(str(label))
+if qtype in ("single_choice", "single_select", "radio"):
+    prev = st.session_state.answers.get(qid, {}).get("selected", [])
+    prev_pid = prev[0] if prev else None
+    prev_index = None
+    if prev_pid in pids:
+        prev_index = pids.index(prev_pid)
 
-    pids.append(final_id)
-
-key = f"q_{qid}"
-
-# предыдущие значения
-prev = st.session_state.answers.get(qid, {})
-prev_sel = prev.get("selected", [])
-if isinstance(prev_sel, str):
-    prev_sel = [prev_sel]
-if prev_sel is None:
-    prev_sel = []
-
-if is_single(qtype):
-    # индекс по prev
-    default_index = None
-    if prev_sel:
-        try:
-            default_index = pids.index(prev_sel[0])
-        except Exception:
-            default_index = None
-
-    choice = st.radio("Выберите 1 вариант:", labels, index=default_index, key=key)
+    choice = st.radio(
+        "Выберите один вариант:",
+        options=list(range(len(labels))),
+        format_func=lambda i: labels[i],
+        index=prev_index if prev_index is not None else None,
+        key=key,
+        label_visibility="collapsed",
+    )
     if choice is not None:
-        i = labels.index(choice)
-        st.session_state.answers[qid] = {"selected": [pids[i]]}
+        st.session_state.answers[qid] = {"selected": [pids[choice]]}
 
-elif is_multi(qtype):
-    defaults = []
-    for s in prev_sel:
-        if s in pids:
-            defaults.append(s)
+elif qtype in ("multi_choice", "multi_select", "checkbox", "multiple_choice"):
+    prev = st.session_state.answers.get(qid, {}).get("selected", [])
+    prev_labels = [labels[pids.index(pid)] for pid in prev if pid in pids]
 
-    # multiselect сразу позволяет выбрать несколько — без “кликни ещё раз”
-    chosen_labels = []
-    if defaults:
-        # превратим defaults -> labels
-        for d in defaults:
-            try:
-                chosen_labels.append(labels[pids.index(d)])
-            except Exception:
-                pass
-
-    chosen = st.multiselect("Выберите варианты:", labels, default=chosen_labels, key=key)
-    selected = []
-    for lab in chosen:
-        i = labels.index(lab)
-        selected.append(pids[i])
-
-    st.session_state.answers[qid] = {"selected": selected}
-
-elif qtype == "scale":
-    # универсально: min/max/step
-    mn = int(q.get("min", 1))
-    mx = int(q.get("max", 10))
-    step = int(q.get("step", 1))
-    prev_val = prev.get("value")
-    if prev_val is None:
-        prev_val = mn
-    val = st.slider("Оценка:", mn, mx, int(prev_val), step=step, key=key)
-    st.session_state.answers[qid] = {"value": val}
+    chosen = st.multiselect(
+        "Выберите варианты:",
+        options=labels,
+        default=prev_labels,
+        key=key,
+        label_visibility="collapsed",
+    )
+    selected_ids = [pids[labels.index(c)] for c in chosen]
+    max_choices = q.get("max_choices")
+    if isinstance(max_choices, int) and max_choices > 0:
+        selected_ids = selected_ids[:max_choices]
+    st.session_state.answers[qid] = {"selected": selected_ids}
 
 elif qtype == "text":
-    prev_text = prev.get("text", "")
-    txt = st.text_area("Введите ответ:", value=prev_text, key=key)
+    prev_txt = st.session_state.answers.get(qid, {}).get("text", "")
+    txt = st.text_area("Ваш ответ:", value=prev_txt, key=key, label_visibility="collapsed")
     st.session_state.answers[qid] = {"text": txt}
 
 else:
-    st.warning(f"Тип вопроса '{qtype}' пока не поддержан — пропускаю.")
+    st.info(f"Тип вопроса '{qtype}' пока пропускаем.")
     st.session_state.answers.setdefault(qid, {})
 
-# optional note
-if q.get("text_field", False):
-    prev_note = st.session_state.answers.get(qid, {}).get("note", "")
-    note = st.text_input("Комментарий (необязательно):", value=prev_note, key=f"note_{qid}")
-    st.session_state.answers.setdefault(qid, {})
-    st.session_state.answers[qid]["note"] = note
-
-# ----------------------------
-# navigation buttons
-# ----------------------------
-c1, c2, c3, c4 = st.columns([1, 1, 1, 2])
+# navigation
+c1, c2 = st.columns(2)
 
 with c1:
-    if st.button("⬅ Назад", disabled=(idx == 0)):
+    if st.button("← Назад", use_container_width=True, disabled=(idx == 0)):
         st.session_state.step = max(0, idx - 1)
         st.rerun()
 
 with c2:
-    if st.button("Далее ➡", disabled=(idx >= total - 1)):
-        st.session_state.step = min(total - 1, idx + 1)
-        st.rerun()
-        
-payload = {
-    "respondent": st.session_state.get("respondent", {}),
-    "respondent_id": st.session_state.get("respondent_id", "client"),
-    "answers": st.session_state.get("answers", {}),
-}
-save_json("responses.json", payload)
+    is_last = (idx == total - 1)
+    next_label = "Завершить" if is_last else "Далее →"
+    if st.button(next_label, use_container_width=True):
+        if not is_last:
+            st.session_state.step = min(total - 1, idx + 1)
+            st.rerun()
+        else:
+            # FINISH: save + score
+            client_id = st.session_state.respondent["client_id"]
+            client_dir = os.path.join(DATA_DIR, client_id)
+            responses_path = os.path.join(client_dir, "responses.json")
+            report_path = os.path.join(client_dir, "report.json")
+
+            payload = {
+                "respondent": st.session_state.respondent,
+                "respondent_id": client_id,
+                "answers": st.session_state.answers,
+            }
+            save_json(responses_path, payload)
+
+            report = score_blocks(blocks_data, payload)
+            save_json(report_path, report)
+
+            st.success("Готово! Результат сохранён.")
+            st.write("Теперь мастер увидит клиента и результат в Master Panel.")
+            st.stop()
