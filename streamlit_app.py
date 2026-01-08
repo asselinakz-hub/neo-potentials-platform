@@ -199,8 +199,6 @@ qid = q.get("id")
 qtype = qtype_norm(q.get("type"))
 prompt = q.get("prompt") or q.get("text") or q.get("title") or qid
 
-st.subheader(f"{bcode}. {bname}")
-st.write(prompt)
 
 # ----------------------------
 # render one question
