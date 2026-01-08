@@ -240,8 +240,8 @@ with c2:
         if not is_last:
             st.session_state.step = min(total - 1, idx + 1)
             st.rerun()
-
-else:
+            
+    else:
     # ===== FINISH: save + score =====
 
     client_id = st.session_state.respondent["client_id"]
