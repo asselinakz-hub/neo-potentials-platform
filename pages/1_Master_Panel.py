@@ -1,6 +1,10 @@
 import json
 import os
 import streamlit as st
+from auth import is_master
+
+if not is_master():
+    st.stop()
 
 DATA_DIR = "data"
 CLIENTS_PATH = os.path.join(DATA_DIR, "clients.json")
