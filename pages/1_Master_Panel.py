@@ -1,5 +1,11 @@
-import streamlit as st
-from auth import require_master_password
+import sys
+from pathlib import Path
+
+# добавляем корень проекта в sys.path (чтобы импорты работали из pages/)
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
+from neo_auth import require_master_password
 
 require_master_password()
 
