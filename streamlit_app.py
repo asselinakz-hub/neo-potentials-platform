@@ -220,8 +220,8 @@ for opt in options:
     # красивый label
     ru = potentials.get(final_id, "")
     if ru and ru != final_id:
-        labels.append(f"{label} — {ru}")
-    else:
+        labels.append(str(label))
+                else:
         labels.append(str(label))
 
     pids.append(final_id)
@@ -315,39 +315,10 @@ with c2:
     if st.button("Далее ➡", disabled=(idx >= total - 1)):
         st.session_state.step = min(total - 1, idx + 1)
         st.rerun()
-
-with c3:
-    if st.button("💾 Save"):
-        payload = {
-            "respondent": {
-                "name": st.session_state.respondent.get("name", ""),
-                "phone": st.session_state.respondent.get("phone", ""),
-                "client_id": st.session_state.respondent.get("client_id", ""),
-            },
-            "respondent_id": st.session_state.respondent.get("client_id") or "demo_user",
-            "answers": st.session_state.answers,
-        }
-        save_json(RESPONSES_PATH, payload)
-        st.success(f"Сохранила {RESPONSES_PATH}")
-
-with c4:
-    if st.button("✅ Finish & Run scoring", disabled=(idx < total - 1)):
-        payload = {
-            "respondent": {
-                "name": st.session_state.respondent.get("name", ""),
-                "phone": st.session_state.respondent.get("phone", ""),
-                "client_id": st.session_state.respondent.get("client_id", ""),
-            },
-            "respondent_id": st.session_state.respondent.get("client_id") or "demo_user",
-            "answers": st.session_state.answers,
-        }
-        save_json(RESPONSES_PATH, payload)
-
-        res = run_scoring()
-        if res.returncode != 0:
-            st.error("Ошибка при скоринге:")
-            st.code(res.stderr or res.stdout)
-        else:
-            st.success("Скоринг выполнен ✅")
-            if os.path.exists(REPORT_PATH):
-                st.info("Отчёт будет доступен в мастер-панели (для мастера).")
+        
+payload = {
+    "respondent": st.session_state.get("respondent", {}),
+    "respondent_id": st.session_state.get("respondent_id", "client"),
+    "answers": st.session_state.get("answers", {}),
+}
+save_json("responses.json", payload)
