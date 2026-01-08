@@ -1,18 +1,25 @@
-import os
-import json
 import sys
 from pathlib import Path
+import importlib.util
 import streamlit as st
 
-# ✅ гарантируем, что корень репозитория в sys.path
+# корень репозитория = папка на уровень выше "pages"
 ROOT = Path(__file__).resolve().parents[1]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+AUTH_PATH = ROOT / "auth.py"
 
-# ✅ импорт пароля мастера
-from auth import require_master_password
+if not AUTH_PATH.exists():
+    st.error(f"Не найден auth.py в корне: {AUTH_PATH}")
+    st.stop()
 
-require_master_password()
+spec = importlib.util.spec_from_file_location("neo_auth_local", str(AUTH_PATH))
+auth_mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(auth_mod)
+
+if not hasattr(auth_mod, "require_master_password"):
+    st.error("В auth.py нет функции require_master_password().")
+    st.stop()
+
+auth_mod.require_master_password()
 
 st.set_page_config(page_title="Master Panel — NEO", layout="wide")
 st.title("🛠️ Master Panel — NEO Potentials")
