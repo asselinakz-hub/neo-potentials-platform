@@ -72,13 +72,12 @@ for b in blocks:
         option_labels = []
         option_ids = []
 
-        for opt in options:
-           # option can be {"potential_id": "..."} OR {"potential": "..."} OR {"potential": "Янтарь"} etc.
-pid = opt.get("potential_id") or opt.get("potential") or opt.get("id") or opt.get("code")
-label = opt.get("label") or opt.get("text") or opt.get("title") or str(pid)
+       for opt in question["options"]:
+    pid = opt.get("potential_id") or opt.get("potential") or opt.get("id") or opt.get("code")
+    label = opt.get("label") or opt.get("text") or opt.get("title") or str(pid)
 
-if pid is None:
-    continue
+    if pid is None:
+        continue
     RU2ID = {
   "Янтарь": "amber",
   "Шунгит": "shungite",
