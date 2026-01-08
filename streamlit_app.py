@@ -199,6 +199,10 @@ qid = q.get("id")
 qtype = qtype_norm(q.get("type"))
 prompt = q.get("prompt") or q.get("text") or q.get("title") or qid
 
+st.markdown(
+    f"<h2 style='text-align:center'>{question['prompt']}</h2>",
+    unsafe_allow_html=True
+)
 
 # ----------------------------
 # render one question
