@@ -221,8 +221,6 @@ for opt in options:
     ru = potentials.get(final_id, "")
     if ru and ru != final_id:
         labels.append(str(label))
-                else:
-        labels.append(str(label))
 
     pids.append(final_id)
 
