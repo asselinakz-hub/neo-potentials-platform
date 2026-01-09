@@ -1,5 +1,6 @@
 {
-  "version": "2.0",
+  "version": "2.1-balanced-3opts",
+  "language": "ru",
   "potentials": {
     "amber": { "ru": "Янтарь" },
     "shungite": { "ru": "Шунгит" },
@@ -11,176 +12,155 @@
     "heliodor": { "ru": "Гелиодор" },
     "amethyst": { "ru": "Аметист" }
   },
-  "signals": {
-    "material": { "ru": "Материя" },
-    "emotion": { "ru": "Эмоции" },
-    "meaning": { "ru": "Смысл" }
-  },
-  "method": {
-    "logic": "3_spheres_everywhere",
-    "note": "Каждый вопрос даёт выбор одной сферы (Материя/Эмоции/Смысл). Внутри сферы записан список potentials для дальнейшего тонкого распределения."
-  },
   "blocks": [
     {
-      "block_id": "block1_energy",
+      "block_id": "block1_spheres",
       "block_code": "B1",
-      "block_name": "Энергия и включение",
-      "goal": "Как вы включаете энергию, что даёт заряд и что восстанавливает.",
-      "questions_total": 12,
+      "block_name": "Сферы и естественные предпочтения",
+      "goal": "Лёгкие бытовые и жизненные ситуации: что ближе, что естественнее.",
       "questions": [
         {
           "id": "b1_q1",
           "order": 1,
-          "column": "motivation",
-          "weight": 1.3,
+          "column": "perception",
+          "weight": 1.0,
           "type": "single_select",
-          "prompt": "Когда у вас появляется свободный час и есть силы — что вы делаете первым делом?",
+          "prompt": "Вы проснулись в хорошем настроении. Что хочется сделать в первую очередь?",
           "options": [
-            { "signal": "material", "label": "Делаю что-то полезное и конкретное: порядок, дела, тело, дом", "potential": "amber", "potentials": ["amber","shungite","citrine","emerald"] },
-            { "signal": "emotion", "label": "Иду в контакт/впечатления: люди, эмоции, общение, атмосфера", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Думаю/планирую/разбираюсь: смысл, идеи, курс, стратегия", "potential": "amethyst", "potentials": ["sapphire","heliodor","amethyst"] }
-          ],
-          "text_field": true
+            { "potential": "amber", "label": "Навести порядок / разложить всё по местам" },
+            { "potential": "citrine", "label": "Сделать полезное дело и почувствовать результат" },
+            { "potential": "emerald", "label": "Создать уют / красоту вокруг (даже мелочами)" }
+          ]
         },
         {
           "id": "b1_q2",
           "order": 2,
-          "column": "perception",
-          "weight": 1.2,
+          "column": "motivation",
+          "weight": 1.0,
           "type": "single_select",
-          "prompt": "В новом месте или проекте вы быстрее всего замечаете…",
+          "prompt": "Если вы устали, что чаще всего возвращает вам ресурс?",
           "options": [
-            { "signal": "material", "label": "Как всё устроено: детали, порядок, структура, удобство", "potential": "amber", "potentials": ["amber","emerald","citrine"] },
-            { "signal": "emotion", "label": "Атмосферу и людей: настроение, контакт, напряжение", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Зачем это всё: цель, смысл, направление, логика", "potential": "sapphire", "potentials": ["sapphire","amethyst","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "amber", "label": "Привести пространство/дела в порядок — и легче дышится" },
+            { "potential": "citrine", "label": "Закрыть одну задачу до результата — и сразу легче" },
+            { "potential": "heliodor", "label": "Разобраться в теме / узнать что-то новое (или объяснить кому-то)" }
+          ]
         },
         {
           "id": "b1_q3",
           "order": 3,
-          "column": "motivation",
-          "weight": 1.3,
+          "column": "instrument",
+          "weight": 1.0,
           "type": "single_select",
-          "prompt": "Что чаще всего даёт вам ощущение «живу»?",
+          "prompt": "Что из этого вы чаще всего замечаете “само собой”?",
           "options": [
-            { "signal": "material", "label": "Когда есть ощутимый результат и движение вперёд", "potential": "citrine", "potentials": ["citrine","amber","shungite"] },
-            { "signal": "emotion", "label": "Когда есть эмоции, люди, яркость, связь", "potential": "ruby", "potentials": ["ruby","garnet"] },
-            { "signal": "meaning", "label": "Когда понимаю, зачем, и вижу смысл/курс", "potential": "amethyst", "potentials": ["amethyst","sapphire","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "amber", "label": "Где нет структуры / где можно упростить" },
+            { "potential": "citrine", "label": "Где теряются время, деньги, эффективность" },
+            { "potential": "sapphire", "label": "Смысл происходящего: «зачем это всё?»" }
+          ]
         },
         {
           "id": "b1_q4",
           "order": 4,
-          "column": "instrument",
-          "weight": 1.1,
+          "column": "perception",
+          "weight": 1.0,
           "type": "single_select",
-          "prompt": "Когда вы устали, что быстрее всего возвращает вас в ресурс?",
+          "prompt": "Вы выбираете занятие “для души”. Что ближе?",
           "options": [
-            { "signal": "material", "label": "Тело/дом/дела: движение, порядок, «разгрузить пространство»", "potential": "shungite", "potentials": ["shungite","amber","emerald"] },
-            { "signal": "emotion", "label": "Тёплое общение или смена впечатлений", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Тишина, чтение, размышления, собрать мысли", "potential": "sapphire", "potentials": ["sapphire","heliodor","amethyst"] }
-          ],
-          "text_field": true
+            { "potential": "shungite", "label": "Движение / тело / активность" },
+            { "potential": "ruby", "label": "Яркие эмоции / впечатления / драйв" },
+            { "potential": "heliodor", "label": "Учёба / чтение / разбор темы" }
+          ]
         },
         {
           "id": "b1_q5",
           "order": 5,
-          "column": "perception",
-          "weight": 1.1,
+          "column": "motivation",
+          "weight": 1.0,
           "type": "single_select",
-          "prompt": "В течение дня вас чаще всего цепляет внимание на…",
+          "prompt": "В компании людей вы чаще…",
           "options": [
-            { "signal": "material", "label": "Практику: как улучшить, сделать удобнее, красивее, быстрее", "potential": "emerald", "potentials": ["emerald","amber","citrine"] },
-            { "signal": "emotion", "label": "Реакции людей, эмоции, отношения, атмосферу", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Идеи, закономерности, смыслы, «почему так»", "potential": "heliodor", "potentials": ["heliodor","sapphire","amethyst"] }
-          ],
-          "text_field": true
+            { "potential": "amber", "label": "Организуете: «давайте нормально сделаем»" },
+            { "potential": "ruby", "label": "Зажигаете атмосферу, добавляете эмоции" },
+            { "potential": "amethyst", "label": "Видите направление и предлагаете план/курс" }
+          ]
         },
         {
           "id": "b1_q6",
           "order": 6,
           "column": "instrument",
-          "weight": 1.2,
+          "weight": 1.0,
           "type": "single_select",
-          "prompt": "Если в проекте хаос — ваша первая естественная реакция?",
+          "prompt": "Что вас чаще всего радует в конце дня?",
           "options": [
-            { "signal": "material", "label": "Собрать порядок: план, роли, чек-лист, структура", "potential": "amber", "potentials": ["amber","citrine","emerald"] },
-            { "signal": "emotion", "label": "Снять напряжение: поддержать, разрядить, объединить людей", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Найти главное: смысл, цель, курс, приоритеты", "potential": "amethyst", "potentials": ["amethyst","sapphire","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "amber", "label": "Чисто/ровно/всё на местах — внутренний порядок" },
+            { "potential": "sapphire", "label": "Поняла смысл / пришла важная мысль" },
+            { "potential": "amethyst", "label": "Есть ясная цель и сделан шаг по плану" }
+          ]
         },
         {
           "id": "b1_q7",
           "order": 7,
-          "column": "motivation",
+          "column": "perception",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Когда вам очень хорошо — это обычно про…",
+          "prompt": "Когда вы выбираете покупку/решение, что сильнее влияет?",
           "options": [
-            { "signal": "material", "label": "Комфорт, порядок, телесность, эстетика, «всё на местах»", "potential": "emerald", "potentials": ["emerald","amber"] },
-            { "signal": "emotion", "label": "События, эмоции, близость, признание, «я в жизни»", "potential": "ruby", "potentials": ["ruby","garnet"] },
-            { "signal": "meaning", "label": "Ясность и смысл: понимаю куда, зачем, что создаю", "potential": "amethyst", "potentials": ["amethyst","sapphire","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "shungite", "label": "Практичность и удобство (чтобы работало/служило)" },
+            { "potential": "emerald", "label": "Красиво, приятно, “моё” по ощущению" },
+            { "potential": "ruby", "label": "Вау-эффект, эмоция, хочется прямо сейчас" }
+          ]
         },
         {
           "id": "b1_q8",
           "order": 8,
-          "column": "perception",
+          "column": "motivation",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Выбирая занятие «для души», вы скорее выберете…",
+          "prompt": "Когда вы “в потоке”, что обычно происходит?",
           "options": [
-            { "signal": "material", "label": "Что-то красивое/практичное: дом, тело, творчество руками", "potential": "emerald", "potentials": ["emerald","shungite","amber"] },
-            { "signal": "emotion", "label": "Что-то с людьми/эмоцией: встреча, событие, впечатление", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Что-то «умное»: чтение, курс, разбор, новые идеи", "potential": "heliodor", "potentials": ["heliodor","sapphire","amethyst"] }
-          ],
-          "text_field": true
+            { "potential": "amber", "label": "Систематизирую, упрощаю, выстраиваю порядок" },
+            { "potential": "shungite", "label": "Делаю руками/в движении — и время исчезает" },
+            { "potential": "garnet", "label": "Есть контакт с людьми — и я оживаю" }
+          ]
         },
         {
           "id": "b1_q9",
           "order": 9,
           "column": "instrument",
-          "weight": 1.1,
+          "weight": 1.0,
           "type": "single_select",
-          "prompt": "В группе людей вы чаще всего становитесь…",
+          "prompt": "Какую роль вы чаще берёте в группе?",
           "options": [
-            { "signal": "material", "label": "Тем(той), кто организует и делает, чтобы работало", "potential": "amber", "potentials": ["amber","citrine","shungite"] },
-            { "signal": "emotion", "label": "Тем(той), кто соединяет, создаёт контакт и атмосферу", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Тем(той), кто задаёт направление и объясняет «зачем»", "potential": "amethyst", "potentials": ["amethyst","sapphire","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "amber", "label": "Навожу порядок и структуру" },
+            { "potential": "shungite", "label": "Делаю и тащу на себе практику" },
+            { "potential": "citrine", "label": "Двигаю к результату и дедлайнам" }
+          ]
         },
         {
           "id": "b1_q10",
           "order": 10,
-          "column": "motivation",
+          "column": "perception",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Что сильнее всего поднимает вашу мотивацию?",
+          "prompt": "Если бы ограничения исчезли (время/деньги), вы бы выбрали работу про…",
           "options": [
-            { "signal": "material", "label": "Понимать, что будет результат/польза/рост", "potential": "citrine", "potentials": ["citrine","amber"] },
-            { "signal": "emotion", "label": "Чувствовать связь и эмоцию: «меня видят/я влияю»", "potential": "ruby", "potentials": ["ruby","garnet"] },
-            { "signal": "meaning", "label": "Видеть смысл и направление: «это важно/это моё»", "potential": "sapphire", "potentials": ["sapphire","amethyst","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "emerald", "label": "красоту, эстетику, гармонию, людей/ощущения" },
+            { "potential": "ruby", "label": "сцену, медиа, события, эмоции, движение жизни" },
+            { "potential": "amethyst", "label": "управление, стратегию, большие цели" }
+          ]
         },
         {
           "id": "b1_q11",
           "order": 11,
-          "column": "perception",
+          "column": "motivation",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Если бы завтра можно было выбрать любой формат жизни — вы бы выбрали…",
+          "prompt": "Что вам проще всего “держать” стабильно каждый день?",
           "options": [
-            { "signal": "material", "label": "Стабильный, удобный, красивый быт + понятные дела", "potential": "emerald", "potentials": ["emerald","amber"] },
-            { "signal": "emotion", "label": "Яркую жизнь, людей, события, путешествия, движение", "potential": "ruby", "potentials": ["ruby","garnet"] },
-            { "signal": "meaning", "label": "Свободу для смыслов: учиться/создавать идеи/вести", "potential": "amethyst", "potentials": ["amethyst","sapphire","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "emerald", "label": "красоту/уход/уют (чтобы было приятно жить)" },
+            { "potential": "garnet", "label": "общение/связь/поддержку близких" },
+            { "potential": "sapphire", "label": "размышления/смыслы/чтение" }
+          ]
         },
         {
           "id": "b1_q12",
@@ -188,65 +168,59 @@
           "column": "instrument",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Как вы чаще всего понимаете, что вы «на своём месте»?",
+          "prompt": "Что вы чаще всего делаете “на автомате”, даже если не просили?",
           "options": [
-            { "signal": "material", "label": "Я делаю, и в реальности становится лучше/понятнее/красивее", "potential": "amber", "potentials": ["amber","emerald","citrine"] },
-            { "signal": "emotion", "label": "Я в контакте, чувствую жизнь, людей и влияние", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Я понимаю смысл и курс, и могу вести/объяснять", "potential": "amethyst", "potentials": ["amethyst","sapphire","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "garnet", "label": "поддерживаю людей, связываю, создаю близость" },
+            { "potential": "heliodor", "label": "объясняю, обучаю, делюсь знаниями" },
+            { "potential": "amethyst", "label": "беру ответственность, веду к цели" }
+          ]
         }
       ]
     },
-
     {
-      "block_id": "block2_patterns",
+      "block_id": "block2_workstyle",
       "block_code": "B2",
-      "block_name": "Естественные паттерны (как вы устроены)",
-      "goal": "Проверяем, как вы естественно думаете/выбираете/реагируете.",
-      "questions_total": 12,
+      "block_name": "Рабочий стиль и энергия",
+      "goal": "Как вы действуете, когда нужно сделать дело, договориться, довести до результата.",
       "questions": [
         {
           "id": "b2_q1",
           "order": 1,
           "column": "perception",
-          "weight": 1.2,
+          "weight": 1.0,
           "type": "single_select",
-          "prompt": "Когда вы слышите новую информацию — вы первым делом…",
+          "prompt": "В работе вас больше всего “включает”…",
           "options": [
-            { "signal": "material", "label": "Думаю, как это применить в жизни/деле", "potential": "citrine", "potentials": ["citrine","amber","emerald"] },
-            { "signal": "emotion", "label": "Слежу, что я чувствую и как это звучит «по-человечески»", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Пытаюсь понять смысл и систему: «как устроено»", "potential": "sapphire", "potentials": ["sapphire","heliodor","amethyst"] }
-          ],
-          "text_field": true
+            { "potential": "ruby", "label": "динамика, эмоции, события, быстрый темп" },
+            { "potential": "sapphire", "label": "смысл, идея, глубина, «зачем»" },
+            { "potential": "heliodor", "label": "знания, обучение, разбор, методика" }
+          ]
         },
         {
           "id": "b2_q2",
           "order": 2,
           "column": "motivation",
-          "weight": 1.1,
+          "weight": 1.0,
           "type": "single_select",
-          "prompt": "Когда надо принять решение, вы чаще опираетесь на…",
+          "prompt": "Если задача сложная, вы чаще начинаете с…",
           "options": [
-            { "signal": "material", "label": "Факты, выгоду, практичность, ресурсы", "potential": "citrine", "potentials": ["citrine","amber"] },
-            { "signal": "emotion", "label": "Людей, отношения, внутреннее чувство", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Смысл, направление, долгосрочную картину", "potential": "amethyst", "potentials": ["amethyst","sapphire"] }
-          ],
-          "text_field": true
+            { "potential": "amber", "label": "структуры: шаги, порядок, список" },
+            { "potential": "ruby", "label": "пинка эмоцией: «погнали!»" },
+            { "potential": "amethyst", "label": "цели: куда идём и что будет на выходе" }
+          ]
         },
         {
           "id": "b2_q3",
           "order": 3,
           "column": "instrument",
-          "weight": 1.1,
+          "weight": 1.0,
           "type": "single_select",
-          "prompt": "Когда вам что-то не нравится, вы чаще…",
+          "prompt": "Что вам проще: придумать, сделать или объяснить?",
           "options": [
-            { "signal": "material", "label": "Переделываю/улучшаю/делаю по-нормальному", "potential": "amber", "potentials": ["amber","emerald","citrine"] },
-            { "signal": "emotion", "label": "Выражаю эмоцию/говорю/вступаю в контакт", "potential": "ruby", "potentials": ["ruby","garnet"] },
-            { "signal": "meaning", "label": "Отхожу и осмысляю: «что это значит и к чему ведёт»", "potential": "sapphire", "potentials": ["sapphire","amethyst","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "shungite", "label": "сделать (практика, руками, через действие)" },
+            { "potential": "sapphire", "label": "придумать смысл/идею, увидеть глубину" },
+            { "potential": "garnet", "label": "сделать через людей и контакт" }
+          ]
         },
         {
           "id": "b2_q4",
@@ -254,13 +228,12 @@
           "column": "perception",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Люди чаще всего описывают вас как…",
+          "prompt": "Когда вы ведёте проект, что для вас “главное”?",
           "options": [
-            { "signal": "material", "label": "Практичную/собранную/надёжную", "potential": "amber", "potentials": ["amber","shungite","citrine"] },
-            { "signal": "emotion", "label": "Яркую/живую/общительную", "potential": "ruby", "potentials": ["ruby","garnet"] },
-            { "signal": "meaning", "label": "Глубокую/умную/стратегичную", "potential": "amethyst", "potentials": ["amethyst","sapphire","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "citrine", "label": "результат и эффективность" },
+            { "potential": "garnet", "label": "люди, отношения, атмосфера" },
+            { "potential": "sapphire", "label": "смысл и идея, чтобы было не пусто" }
+          ]
         },
         {
           "id": "b2_q5",
@@ -268,13 +241,12 @@
           "column": "motivation",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Если вы волнуетесь, вам помогает…",
+          "prompt": "Как вы лучше всего убеждаете?",
           "options": [
-            { "signal": "material", "label": "Сделать конкретный шаг/упорядочить/двигаться", "potential": "shungite", "potentials": ["shungite","amber","citrine"] },
-            { "signal": "emotion", "label": "Поговорить/получить поддержку/быть в контакте", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Понять причину, смысл, выстроить план", "potential": "amethyst", "potentials": ["amethyst","sapphire","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "amber", "label": "логикой и структурой" },
+            { "potential": "emerald", "label": "ощущением, вкусом, гармонией, эмпатией" },
+            { "potential": "amethyst", "label": "видением и направлением (куда ведём)" }
+          ]
         },
         {
           "id": "b2_q6",
@@ -282,13 +254,12 @@
           "column": "instrument",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Что для вас «качество жизни» в первую очередь?",
+          "prompt": "Что вам проще держать в дисциплине?",
           "options": [
-            { "signal": "material", "label": "Комфорт, порядок, здоровье, эстетика", "potential": "emerald", "potentials": ["emerald","amber","shungite"] },
-            { "signal": "emotion", "label": "Тёплые отношения, эмоции, радость, люди", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Осмысленность, рост, направление, идея", "potential": "sapphire", "potentials": ["sapphire","heliodor","amethyst"] }
-          ],
-          "text_field": true
+            { "potential": "citrine", "label": "план по результату/цифрам" },
+            { "potential": "ruby", "label": "ритм/движ/события" },
+            { "potential": "amethyst", "label": "курс и стратегию" }
+          ]
         },
         {
           "id": "b2_q7",
@@ -296,13 +267,12 @@
           "column": "perception",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "В конфликте вы быстрее всего реагируете на…",
+          "prompt": "Когда вы объясняете людям, вы чаще делаете упор на…",
           "options": [
-            { "signal": "material", "label": "Несправедливость в деле/логике/правилах", "potential": "amber", "potentials": ["amber","citrine"] },
-            { "signal": "emotion", "label": "Тон, эмоцию, отношение, «как со мной»", "potential": "ruby", "potentials": ["ruby","garnet"] },
-            { "signal": "meaning", "label": "Смысл и принципы: «зачем мы так делаем»", "potential": "sapphire", "potentials": ["sapphire","amethyst"] }
-          ],
-          "text_field": true
+            { "potential": "citrine", "label": "выгоду и практический результат" },
+            { "potential": "ruby", "label": "эмоцию, вовлечение, «чтобы загорелись»" },
+            { "potential": "sapphire", "label": "смысл и глубину" }
+          ]
         },
         {
           "id": "b2_q8",
@@ -310,13 +280,12 @@
           "column": "motivation",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Если вам надо быстро «выйти в норму», вы чаще…",
+          "prompt": "Вы чувствуете уверенность, когда…",
           "options": [
-            { "signal": "material", "label": "Делаете рутину: порядок, дела, тело", "potential": "amber", "potentials": ["amber","shungite"] },
-            { "signal": "emotion", "label": "Ищете эмоцию/контакт/поддержку", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Собираете мысли: смысл, выводы, план", "potential": "amethyst", "potentials": ["amethyst","sapphire","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "amber", "label": "есть система и порядок" },
+            { "potential": "citrine", "label": "виден результат и цифры" },
+            { "potential": "garnet", "label": "есть поддержка и контакт с людьми" }
+          ]
         },
         {
           "id": "b2_q9",
@@ -324,13 +293,12 @@
           "column": "instrument",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Если вас попросили помочь человеку, вы чаще помогаете через…",
+          "prompt": "Что вам важнее в рабочем процессе?",
           "options": [
-            { "signal": "material", "label": "Действие: конкретная помощь/структура/решение", "potential": "amber", "potentials": ["amber","citrine","shungite"] },
-            { "signal": "emotion", "label": "Поддержку: тепло, внимание, контакт", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Понимание: объяснить, дать смысл, собрать картину", "potential": "heliodor", "potentials": ["heliodor","sapphire","amethyst"] }
-          ],
-          "text_field": true
+            { "potential": "emerald", "label": "качество, красота, гармония" },
+            { "potential": "heliodor", "label": "понятная методика, обучение, знания" },
+            { "potential": "amethyst", "label": "управление и стратегия" }
+          ]
         },
         {
           "id": "b2_q10",
@@ -338,13 +306,12 @@
           "column": "perception",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Что вас чаще вдохновляет в чужих историях?",
+          "prompt": "Что вы чаще всего замечаете в людях?",
           "options": [
-            { "signal": "material", "label": "Как человек сделал результат / построил систему / улучшил жизнь", "potential": "citrine", "potentials": ["citrine","amber","emerald"] },
-            { "signal": "emotion", "label": "Про любовь, отношения, эмоции, преодоление", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Про идеи, смыслы, миссию, духовный рост", "potential": "sapphire", "potentials": ["sapphire","heliodor","amethyst"] }
-          ],
-          "text_field": true
+            { "potential": "shungite", "label": "энергию тела/темп/делает или нет" },
+            { "potential": "garnet", "label": "тепло/контакт/настроение" },
+            { "potential": "heliodor", "label": "уровень знаний/умение учиться" }
+          ]
         },
         {
           "id": "b2_q11",
@@ -352,13 +319,12 @@
           "column": "motivation",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Когда вы ставите цель, для вас важнее…",
+          "prompt": "Когда вы ставите цель, вам легче…",
           "options": [
-            { "signal": "material", "label": "Понятный результат и измеримость", "potential": "citrine", "potentials": ["citrine","amber"] },
-            { "signal": "emotion", "label": "Чтобы это давало эмоцию и было «по сердцу»", "potential": "ruby", "potentials": ["ruby","garnet"] },
-            { "signal": "meaning", "label": "Чтобы это имело смысл и курс в будущем", "potential": "amethyst", "potentials": ["amethyst","sapphire"] }
-          ],
-          "text_field": true
+            { "potential": "emerald", "label": "чувствовать, как это будет “красиво/моё”" },
+            { "potential": "garnet", "label": "вдохновляться через людей/команду" },
+            { "potential": "amethyst", "label": "держать курс и стратегию" }
+          ]
         },
         {
           "id": "b2_q12",
@@ -366,93 +332,89 @@
           "column": "instrument",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Что вы бы выбрали как главную «опору» на год?",
+          "prompt": "В чём вы чаще всего сильны “по факту”, даже без подготовки?",
           "options": [
-            { "signal": "material", "label": "Систему и устойчивость в быту/делах/здоровье", "potential": "amber", "potentials": ["amber","shungite","emerald"] },
-            { "signal": "emotion", "label": "Отношения, общение, энергия, расширение контактов", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Рост, обучение, стратегия, смысловой путь", "potential": "heliodor", "potentials": ["heliodor","sapphire","amethyst"] }
-          ],
-          "text_field": true
+            { "potential": "citrine", "label": "довести до результата" },
+            { "potential": "ruby", "label": "поднять энергию, зажечь" },
+            { "potential": "heliodor", "label": "объяснить и обучить" }
+          ]
         }
       ]
     },
-
     {
-      "block_id": "block3_depletion",
+      "block_id": "block3_antipatterns",
       "block_code": "B3",
-      "block_name": "Что выматывает (анти-ресурс)",
-      "goal": "Где вы теряете энергию и начинаете сопротивляться.",
-      "questions_total": 12,
+      "block_name": "Слабые места и перегруз",
+      "goal": "Что чаще уводит в напряжение/перекос. Выбор = что чаще проявляется, когда тяжело.",
+      "scoring_rules": {
+        "anti_weight_multiplier": 1.0,
+        "reverse_items": []
+      },
       "questions": [
         {
           "id": "b3_q1",
           "order": 1,
-          "column": "motivation",
-          "weight": 1.2,
+          "column": "perception",
+          "weight": 1.0,
           "type": "single_select",
-          "prompt": "Что вас выматывает быстрее всего?",
+          "prompt": "Когда вы перегружены, что проявляется чаще всего?",
           "options": [
-            { "signal": "material", "label": "Рутина без смысла: быт/дела/контроль/цифры «ради цифр»", "potential": "amber", "potentials": ["amber","citrine","shungite"] },
-            { "signal": "emotion", "label": "Тяжёлые эмоции людей, конфликты, напряжённые разговоры", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Когда «не понимаю зачем» или когда всё слишком абстрактно", "potential": "sapphire", "potentials": ["sapphire","amethyst","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "amber", "label": "цепляюсь за порядок/контроль, раздражает хаос" },
+            { "potential": "citrine", "label": "давлю на результат и «быстрее», даже если уже устала" },
+            { "potential": "emerald", "label": "очень тонко всё чувствую и устаю от людей/эмоций" }
+          ]
         },
         {
           "id": "b3_q2",
           "order": 2,
-          "column": "perception",
-          "weight": 1.1,
+          "column": "motivation",
+          "weight": 1.0,
           "type": "single_select",
-          "prompt": "Когда вы начинаете прокрастинировать, чаще всего это потому что…",
+          "prompt": "Что чаще всего “ломает” ваш день?",
           "options": [
-            { "signal": "material", "label": "Слишком много рутины/дел/деталей/физики", "potential": "shungite", "potentials": ["shungite","amber"] },
-            { "signal": "emotion", "label": "Слишком много людей/эмоций/публичности", "potential": "ruby", "potentials": ["ruby","garnet"] },
-            { "signal": "meaning", "label": "Не вижу смысла/курса/логики, не понимаю «зачем»", "potential": "amethyst", "potentials": ["amethyst","sapphire","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "shungite", "label": "тело: нет сил, тяжесть, всё через физику" },
+            { "potential": "ruby", "label": "эмоция/вспышка/качели" },
+            { "potential": "heliodor", "label": "информационный шум: хочется закрыться" }
+          ]
         },
         {
           "id": "b3_q3",
           "order": 3,
           "column": "instrument",
-          "weight": 1.1,
+          "weight": 1.0,
           "type": "single_select",
-          "prompt": "Какая нагрузка кажется вам «не вашей»?",
+          "prompt": "Когда планы рушатся, вы чаще…",
           "options": [
-            { "signal": "material", "label": "Сухие процессы/цифры/таблицы/контроль", "potential": "citrine", "potentials": ["citrine","amber"] },
-            { "signal": "emotion", "label": "Постоянная коммуникация, «держать» людей и эмоции", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Стратегия, ответственность за курс, сложные решения", "potential": "amethyst", "potentials": ["amethyst","sapphire"] }
-          ],
-          "text_field": true
+            { "potential": "amber", "label": "включаюсь в контроль и начинаю всё перестраивать" },
+            { "potential": "ruby", "label": "взрываюсь эмоцией или резко меняю курс" },
+            { "potential": "amethyst", "label": "давлю стратегией и ответственностью, даже через себя" }
+          ]
         },
         {
           "id": "b3_q4",
           "order": 4,
-          "column": "motivation",
+          "column": "perception",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Что сильнее всего раздражает вас в людях?",
+          "prompt": "Что вам сложнее всего терпеть?",
           "options": [
-            { "signal": "material", "label": "Неорганизованность, беспорядок, безответственность", "potential": "amber", "potentials": ["amber","citrine"] },
-            { "signal": "emotion", "label": "Холодность, токсичность, давление эмоциями", "potential": "ruby", "potentials": ["ruby","garnet"] },
-            { "signal": "meaning", "label": "Поверхностность, отсутствие смысла и глубины", "potential": "sapphire", "potentials": ["sapphire","amethyst"] }
-          ],
-          "text_field": true
+            { "potential": "amber", "label": "хаос и бессистемность" },
+            { "potential": "citrine", "label": "медленно и без результата" },
+            { "potential": "sapphire", "label": "пустые разговоры без смысла" }
+          ]
         },
         {
           "id": "b3_q5",
           "order": 5,
-          "column": "perception",
+          "column": "motivation",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "В каких ситуациях вы чувствуете «я пустая/пустой»?",
+          "prompt": "В конфликте вы чаще уходите в…",
           "options": [
-            { "signal": "material", "label": "Когда много быта/дел/контроля и нет красоты/передышки", "potential": "emerald", "potentials": ["emerald","amber","shungite"] },
-            { "signal": "emotion", "label": "Когда много контакта и я «отдаю» людям слишком много", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Когда теряю смысл и направление", "potential": "amethyst", "potentials": ["amethyst","sapphire","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "amber", "label": "правильность и правила" },
+            { "potential": "emerald", "label": "обиду/переживания/тонкость" },
+            { "potential": "amethyst", "label": "жёсткое «как надо», контроль и давление" }
+          ]
         },
         {
           "id": "b3_q6",
@@ -460,41 +422,38 @@
           "column": "instrument",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Что вы бы охотно делегировали навсегда?",
+          "prompt": "Что быстрее всего выбивает вас из ресурса?",
           "options": [
-            { "signal": "material", "label": "Рутину, быт, документы, контроль мелочей", "potential": "amber", "potentials": ["amber","shungite"] },
-            { "signal": "emotion", "label": "Тяжёлые разговоры, разборы отношений, «быть психологом всем»", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Долгие размышления, стратегия, выбор курса, ответственность", "potential": "amethyst", "potentials": ["amethyst","sapphire","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "citrine", "label": "когда результат не получается или всё «впустую»" },
+            { "potential": "ruby", "label": "когда эмоций слишком много (или слишком мало)" },
+            { "potential": "amethyst", "label": "когда приходится нести ответственность за всех" }
+          ]
         },
         {
           "id": "b3_q7",
           "order": 7,
-          "column": "motivation",
+          "column": "perception",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Что сильнее всего сбивает вам настрой?",
+          "prompt": "Когда вы устали, что чаще становится “токсичным”?",
           "options": [
-            { "signal": "material", "label": "Когда всё разваливается и «не работает»", "potential": "amber", "potentials": ["amber","citrine"] },
-            { "signal": "emotion", "label": "Когда меня не видят/не чувствуют/нет контакта", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Когда я не понимаю, куда всё идёт", "potential": "amethyst", "potentials": ["amethyst","sapphire"] }
-          ],
-          "text_field": true
+            { "potential": "amber", "label": "перфекционизм и придирки к порядку" },
+            { "potential": "citrine", "label": "гонка за эффективностью" },
+            { "potential": "garnet", "label": "зависимость от реакции людей/отношений" }
+          ]
         },
         {
           "id": "b3_q8",
           "order": 8,
-          "column": "perception",
+          "column": "motivation",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Что вам тяжелее всего «терпеть» долго?",
+          "prompt": "Что чаще всего становится внутренним “шумом”?",
           "options": [
-            { "signal": "material", "label": "Непонятные процессы/рутина/бытовой хаос", "potential": "shungite", "potentials": ["shungite","amber"] },
-            { "signal": "emotion", "label": "Скучная атмосфера, отсутствие эмоций, одиночество", "potential": "ruby", "potentials": ["ruby","garnet"] },
-            { "signal": "meaning", "label": "Бессмысленные задачи или пустые разговоры", "potential": "sapphire", "potentials": ["sapphire","amethyst"] }
-          ],
-          "text_field": true
+            { "potential": "emerald", "label": "эмоции/переживания/тонкая чувствительность" },
+            { "potential": "heliodor", "label": "перегруз информацией, хочется всё понять сразу" },
+            { "potential": "amethyst", "label": "постоянные планы и контроль будущего" }
+          ]
         },
         {
           "id": "b3_q9",
@@ -502,41 +461,38 @@
           "column": "instrument",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Под стрессом ваша «тень» чаще всего про…",
+          "prompt": "Если вас критикуют, что больнее?",
           "options": [
-            { "signal": "material", "label": "Контроль/жёсткость/перфекционизм или «всё сама»", "potential": "amber", "potentials": ["amber","citrine"] },
-            { "signal": "emotion", "label": "Взрыв эмоций/обида/драма или резкость", "potential": "ruby", "potentials": ["ruby","garnet"] },
-            { "signal": "meaning", "label": "Уход в голову/заморозка/сомнения «куда вообще»", "potential": "amethyst", "potentials": ["amethyst","sapphire","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "shungite", "label": "что я “не справляюсь” на деле" },
+            { "potential": "garnet", "label": "что меня “не любят/не ценят”" },
+            { "potential": "heliodor", "label": "что я “не знаю/не понимаю”" }
+          ]
         },
         {
           "id": "b3_q10",
           "order": 10,
-          "column": "motivation",
+          "column": "perception",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Когда у вас нет энергии, вы чаще всего…",
+          "prompt": "Что вас чаще всего раздражает в других?",
           "options": [
-            { "signal": "material", "label": "Зависаете в быту/мелочах или откладываете дела", "potential": "shungite", "potentials": ["shungite","amber"] },
-            { "signal": "emotion", "label": "Уходите в эмоции/контакт/соцсети/«хочу чтобы меня поддержали»", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Уходите в мысли/сомнения/смысловой кризис", "potential": "sapphire", "potentials": ["sapphire","amethyst","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "emerald", "label": "грубость, отсутствие такта/красоты" },
+            { "potential": "ruby", "label": "вялость, отсутствие эмоций и энергии" },
+            { "potential": "amethyst", "label": "безответственность и отсутствие курса" }
+          ]
         },
         {
           "id": "b3_q11",
           "order": 11,
-          "column": "perception",
+          "column": "motivation",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Какая фраза чаще всего звучит у вас внутри в тяжёлые периоды?",
+          "prompt": "Внутренний стоп чаще выглядит как…",
           "options": [
-            { "signal": "material", "label": "«Надо собраться и сделать» / «порядка нет»", "potential": "amber", "potentials": ["amber","citrine"] },
-            { "signal": "emotion", "label": "«Меня не слышат/не понимают» / «я одна»", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "«Я не понимаю, зачем это» / «куда я иду»", "potential": "amethyst", "potentials": ["amethyst","sapphire"] }
-          ],
-          "text_field": true
+            { "potential": "emerald", "label": "тонкое «не хочу», чувствительность, сомнения" },
+            { "potential": "garnet", "label": "страх потерять контакт/не понравиться" },
+            { "potential": "amethyst", "label": "страх ошибиться и «не привести к цели»" }
+          ]
         },
         {
           "id": "b3_q12",
@@ -544,191 +500,176 @@
           "column": "instrument",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Самое главное, что вам нужно, чтобы не выгорать — это…",
+          "prompt": "Что сложнее всего отпускать?",
           "options": [
-            { "signal": "material", "label": "Режим, стабильность, опоры в реальности", "potential": "shungite", "potentials": ["shungite","amber","emerald"] },
-            { "signal": "emotion", "label": "Поддержка, контакт, эмоциональная жизнь", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Смысл и направление, обучение, рост", "potential": "heliodor", "potentials": ["heliodor","sapphire","amethyst"] }
-          ],
-          "text_field": true
+            { "potential": "garnet", "label": "отношения и эмоциональную связь" },
+            { "potential": "ruby", "label": "яркость/движ/впечатления" },
+            { "potential": "citrine", "label": "контроль результата и выгоды" }
+          ]
         }
       ]
     },
-
     {
-      "block_id": "block4_verification",
+      "block_id": "block4_validation",
       "block_code": "B4",
-      "block_name": "Реальность и поведение (верификация)",
-      "goal": "Проверяем, что проявляется в реальных действиях, а не в идеальном образе.",
-      "questions_total": 12,
+      "block_name": "Проверка и уточнение",
+      "goal": "Тонкие различия: что ближе по ощущению. Помогает точнее разложить матрицу.",
       "questions": [
         {
           "id": "b4_q1",
           "order": 1,
-          "column": "instrument",
-          "weight": 1.2,
+          "column": "perception",
+          "weight": 1.0,
           "type": "single_select",
-          "prompt": "Если нужно быстро решить проблему — вы чаще…",
+          "prompt": "Что для вас важнее в идеальном дне?",
           "options": [
-            { "signal": "material", "label": "Делаете конкретные шаги, чините, организуете, доводите", "potential": "citrine", "potentials": ["citrine","amber","shungite"] },
-            { "signal": "emotion", "label": "Собираете людей, договариваетесь, включаете эмоцию", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Определяете стратегию: что главное, куда идём", "potential": "amethyst", "potentials": ["amethyst","sapphire","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "amber", "label": "порядок и ясность" },
+            { "potential": "citrine", "label": "результат и эффективность" },
+            { "potential": "emerald", "label": "красота и гармония" }
+          ]
         },
         {
           "id": "b4_q2",
           "order": 2,
-          "column": "perception",
-          "weight": 1.1,
+          "column": "motivation",
+          "weight": 1.0,
           "type": "single_select",
-          "prompt": "Когда вы рассказываете о себе, вы чаще говорите про…",
+          "prompt": "Что быстрее всего возвращает вам уверенность?",
           "options": [
-            { "signal": "material", "label": "Что я делаю, какие результаты, как устроена моя жизнь", "potential": "citrine", "potentials": ["citrine","amber","emerald"] },
-            { "signal": "emotion", "label": "Что я чувствую, какие у меня отношения, какая атмосфера", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Во что я верю, какие смыслы, идеи и путь", "potential": "sapphire", "potentials": ["sapphire","amethyst","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "garnet", "label": "поддержка людей и контакт" },
+            { "potential": "heliodor", "label": "понять/выучить/разобраться" },
+            { "potential": "amethyst", "label": "ясный план и контроль курса" }
+          ]
         },
         {
           "id": "b4_q3",
           "order": 3,
-          "column": "motivation",
-          "weight": 1.1,
+          "column": "instrument",
+          "weight": 1.0,
           "type": "single_select",
-          "prompt": "Если вам предложили новый проект — вы соглашаетесь потому что…",
+          "prompt": "Если нужно вдохновить других, вы скорее…",
           "options": [
-            { "signal": "material", "label": "Вижу пользу/результат/ресурс/рост", "potential": "citrine", "potentials": ["citrine","amber"] },
-            { "signal": "emotion", "label": "Мне интересны люди, атмосфера, эмоции", "potential": "ruby", "potentials": ["ruby","garnet"] },
-            { "signal": "meaning", "label": "Вижу смысл, идею, направление", "potential": "amethyst", "potentials": ["amethyst","sapphire","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "ruby", "label": "зажжёте эмоцией" },
+            { "potential": "sapphire", "label": "дадите смысл/идею" },
+            { "potential": "heliodor", "label": "объясните понятным образом" }
+          ]
         },
         {
           "id": "b4_q4",
           "order": 4,
-          "column": "instrument",
+          "column": "perception",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Когда вы планируете неделю, вы думаете прежде всего о…",
+          "prompt": "В выборе места/дома вы больше про…",
           "options": [
-            { "signal": "material", "label": "Делах, быте, эффективности, расписании", "potential": "amber", "potentials": ["amber","citrine","shungite"] },
-            { "signal": "emotion", "label": "Встречах, людях, событиях, впечатлениях", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Приоритетах, смыслах, курсе, важном", "potential": "amethyst", "potentials": ["amethyst","sapphire"] }
-          ],
-          "text_field": true
+            { "potential": "shungite", "label": "удобство и практичность" },
+            { "potential": "emerald", "label": "атмосферу и красоту" },
+            { "potential": "ruby", "label": "впечатления и энергию места" }
+          ]
         },
         {
           "id": "b4_q5",
           "order": 5,
-          "column": "perception",
+          "column": "motivation",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Что для вас «идеальный день» (по ощущениям)?",
+          "prompt": "Вам проще всего “держать себя” через…",
           "options": [
-            { "signal": "material", "label": "Комфорт, порядок, красивые детали, сделанные дела", "potential": "emerald", "potentials": ["emerald","amber","citrine"] },
-            { "signal": "emotion", "label": "Люди, эмоции, события, теплота, жизнь", "potential": "ruby", "potentials": ["ruby","garnet"] },
-            { "signal": "meaning", "label": "Тишина, ясность, смыслы, рост, направление", "potential": "sapphire", "potentials": ["sapphire","heliodor","amethyst"] }
-          ],
-          "text_field": true
+            { "potential": "shungite", "label": "движение/телесность" },
+            { "potential": "garnet", "label": "разговор/контакт" },
+            { "potential": "heliodor", "label": "обучение/понимание" }
+          ]
         },
         {
           "id": "b4_q6",
           "order": 6,
-          "column": "motivation",
+          "column": "instrument",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Если вы выбираете обучение, то вы берёте то, что…",
+          "prompt": "Когда вы принимаете решение, сильнее опираетесь на…",
           "options": [
-            { "signal": "material", "label": "Сразу можно применить и получить результат", "potential": "citrine", "potentials": ["citrine","amber"] },
-            { "signal": "emotion", "label": "Даёт вдохновение и эмоцию (мне интересно!)", "potential": "ruby", "potentials": ["ruby","garnet"] },
-            { "signal": "meaning", "label": "Даёт понимание системы и расширяет мышление", "potential": "heliodor", "potentials": ["heliodor","sapphire","amethyst"] }
-          ],
-          "text_field": true
+            { "potential": "citrine", "label": "пользу и результат" },
+            { "potential": "ruby", "label": "эмоцию/желание" },
+            { "potential": "amethyst", "label": "стратегию и цель" }
+          ]
         },
         {
           "id": "b4_q7",
           "order": 7,
-          "column": "instrument",
+          "column": "perception",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Если вы видите возможность заработать/сделать проект, вы чаще…",
+          "prompt": "Что вам приятнее делать регулярно?",
           "options": [
-            { "signal": "material", "label": "Считаете, планируете и делаете конкретные шаги", "potential": "citrine", "potentials": ["citrine","amber"] },
-            { "signal": "emotion", "label": "Идёте через людей, связи, доверие", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Проверяете: соответствует ли это смыслу и курсу", "potential": "amethyst", "potentials": ["amethyst","sapphire"] }
-          ],
-          "text_field": true
+            { "potential": "amber", "label": "наводить порядок и структуру" },
+            { "potential": "shungite", "label": "двигаться/заниматься телом" },
+            { "potential": "garnet", "label": "общаться и быть с людьми" }
+          ]
         },
         {
           "id": "b4_q8",
           "order": 8,
-          "column": "perception",
+          "column": "motivation",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Ваш стиль «влияния» на людей чаще…",
+          "prompt": "Что вас больше всего “цепляет” в контенте/историях?",
           "options": [
-            { "signal": "material", "label": "Через компетентность и результат: «я покажу как»", "potential": "citrine", "potentials": ["citrine","amber"] },
-            { "signal": "emotion", "label": "Через эмоцию и контакт: «я зажгу/соединю»", "potential": "ruby", "potentials": ["ruby","garnet"] },
-            { "signal": "meaning", "label": "Через смыслы и стратегию: «я объясню зачем»", "potential": "amethyst", "potentials": ["amethyst","sapphire","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "emerald", "label": "красота, стиль, ощущения" },
+            { "potential": "garnet", "label": "люди, чувства, отношения" },
+            { "potential": "sapphire", "label": "смысл, глубина, инсайт" }
+          ]
         },
         {
           "id": "b4_q9",
           "order": 9,
-          "column": "motivation",
+          "column": "instrument",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Что вы чаще всего создаёте вокруг себя?",
+          "prompt": "Где вы чувствуете себя “на своём месте”?",
           "options": [
-            { "signal": "material", "label": "Порядок/удобство/красоту/систему", "potential": "emerald", "potentials": ["emerald","amber"] },
-            { "signal": "emotion", "label": "Атмосферу/движение/эмоции/сообщество", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Идею/концепт/путь/рост", "potential": "sapphire", "potentials": ["sapphire","amethyst","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "garnet", "label": "с людьми и в контакте" },
+            { "potential": "heliodor", "label": "в роли объясняющего/обучающего" },
+            { "potential": "amethyst", "label": "в роли ведущего и управляющего" }
+          ]
         },
         {
           "id": "b4_q10",
           "order": 10,
-          "column": "instrument",
+          "column": "perception",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Если надо быстро поднять качество жизни, вы начнёте с…",
+          "prompt": "Что для вас важнее в проекте?",
           "options": [
-            { "signal": "material", "label": "Режим, порядок, здоровье, дом, практические шаги", "potential": "shungite", "potentials": ["shungite","amber","emerald"] },
-            { "signal": "emotion", "label": "Отношения, эмоции, люди, впечатления", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Смыслы, цели, стратегия, курс", "potential": "amethyst", "potentials": ["amethyst","sapphire","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "citrine", "label": "результат и эффективность" },
+            { "potential": "ruby", "label": "энергия, эмоции, драйв" },
+            { "potential": "amethyst", "label": "курс, стратегия, управление" }
+          ]
         },
         {
           "id": "b4_q11",
           "order": 11,
-          "column": "perception",
+          "column": "motivation",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Что для вас «успех»?",
+          "prompt": "Когда вы учитесь чему-то новому, вам важнее…",
           "options": [
-            { "signal": "material", "label": "Устойчивость, результат, ресурс, качество жизни", "potential": "citrine", "potentials": ["citrine","amber","emerald"] },
-            { "signal": "emotion", "label": "Живость, любовь, признание, эмоция, люди рядом", "potential": "ruby", "potentials": ["ruby","garnet"] },
-            { "signal": "meaning", "label": "Осмысленный путь, рост, влияние через идеи", "potential": "sapphire", "potentials": ["sapphire","amethyst","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "emerald", "label": "ощущение и вкус (чтобы “легло” красиво)" },
+            { "potential": "heliodor", "label": "логика и объяснение" },
+            { "potential": "amethyst", "label": "применить в стратегии/курсе" }
+          ]
         },
         {
           "id": "b4_q12",
           "order": 12,
-          "column": "motivation",
+          "column": "instrument",
           "weight": 1.0,
           "type": "single_select",
-          "prompt": "Какой вариант звучит как «это точно про меня» больше всего?",
+          "prompt": "Что вы бы выбрали на вечер, если есть выбор?",
           "options": [
-            { "signal": "material", "label": "Я улучшаю реальность: делаю, строю, организую, довожу", "potential": "amber", "potentials": ["amber","citrine","emerald","shungite"] },
-            { "signal": "emotion", "label": "Я оживляю людей и пространство: контакт, тепло, энергия", "potential": "garnet", "potentials": ["garnet","ruby"] },
-            { "signal": "meaning", "label": "Я даю смысл и курс: идеи, стратегия, обучение, направление", "potential": "amethyst", "potentials": ["amethyst","sapphire","heliodor"] }
-          ],
-          "text_field": true
+            { "potential": "citrine", "label": "сделать полезное и закрыть результат" },
+            { "potential": "ruby", "label": "впечатления/движ/эмоции" },
+            { "potential": "sapphire", "label": "спокойно подумать/почитать про смыслы" }
+          ]
         }
       ]
     }
