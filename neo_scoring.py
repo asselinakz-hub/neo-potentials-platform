@@ -1,42 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-NEO Potentials — Scoring Engine (fixed invert logic)
-
-Input:
-  1) neo_blocks.json   (blocks with questions)
-  2) responses.json    (answers)
-
-Output:
-  - JSON report (optionally saved to --out)
-  - human readable 3×3 matrix printed to stdout
-
-Key logic:
-  - Blocks 1/2/4: selected -> strength (+)
-  - invert_score: selected -> weakness (+), NOT strength (-)
-  - Block 3: selected -> weakness (+), reverse_items reduce weakness (validation)
-  - multi_select: weight is split across selected options
-"""
-
 from __future__ import annotations
 
 import argparse
 import json
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 POTENTIALS_RU = [
     "Янтарь", "Шунгит", "Цитрин",
     "Изумруд", "Рубин", "Гранат",
     "Сапфир", "Гелиодор", "Аметист",
-]
-
-# canonical ids used in blocks
-POTENTIAL_IDS = [
-    "amber", "shungite", "citrine",
-    "emerald", "ruby", "garnet",
-    "sapphire", "heliodor", "amethyst",
 ]
 
 ID2RU = {
@@ -50,7 +25,6 @@ ID2RU = {
     "heliodor": "Гелиодор",
     "amethyst": "Аметист",
 }
-
 RU2ID = {v: k for k, v in ID2RU.items()}
 
 COLUMNS = ["perception", "motivation", "instrument"]
@@ -66,15 +40,79 @@ def save_json(path: str, data: Any) -> None:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def safe_get_selected(ans_obj: Any) -> List[str]:
+def question_type(q: Dict[str, Any]) -> str:
+    return str(q.get("type", "")).strip().lower()
+
+
+def is_multi(q: Dict[str, Any]) -> bool:
+    return question_type(q) in ("multi_choice", "multi_select", "multiple_choice", "checkbox")
+
+
+def is_single(q: Dict[str, Any]) -> bool:
+    return question_type(q) in ("single_choice", "single_select", "radio")
+
+
+def clamp_floor(x: float, floor: float = 0.0) -> float:
+    return x if x >= floor else floor
+
+
+@dataclass
+class PotentialScore:
+    strength: float = 0.0
+    weakness: float = 0.0
+    col_points: Dict[str, float] = None
+
+    def __post_init__(self):
+        if self.col_points is None:
+            self.col_points = {c: 0.0 for c in COLUMNS}
+
+
+def build_option_map(blocks_json: Dict[str, Any]) -> Tuple[Dict[str, str], Dict[str, str]]:
     """
-    Accepts:
-      - {"selected": ["..."]} or {"selected": "..."}
-      - {"value": "..."} etc.
-      - direct string/list
+    Returns:
+      opt2pot: maps "opt_3" -> "citrine"
+      pot2ru:  maps "citrine" -> "Цитрин"
+    """
+    opt2pot: Dict[str, str] = {}
+
+    for blk in blocks_json.get("blocks", []):
+        for q in blk.get("questions", []):
+            for opt in q.get("options", []) or []:
+                if not isinstance(opt, dict):
+                    continue
+                opt_id = opt.get("id")  # may be "opt_3"
+                pot = opt.get("potential") or opt.get("potential_id") or opt.get("code") or opt.get("id_code")
+                if isinstance(opt_id, str) and isinstance(pot, str):
+                    pot = pot.strip().lower()
+                    if pot in ID2RU:
+                        opt2pot[opt_id.strip()] = pot
+
+    pot2ru = {pid: ID2RU[pid] for pid in ID2RU}
+    return opt2pot, pot2ru
+
+
+def extract_selected_tokens(ans_obj: Any) -> List[str]:
+    """
+    Unifies different answer shapes into a flat list of tokens:
+      - "opt_3"
+      - ["opt_1","opt_7"]
+      - {"selected": "..."} / {"selected":[...]}
+      - {"value": ...}
+      - {"fast":[...],"slow":[...]} (matrix_time)
     """
     if ans_obj is None:
         return []
+
+    # matrix_time style
+    if isinstance(ans_obj, dict) and ("fast" in ans_obj or "slow" in ans_obj):
+        out: List[str] = []
+        fast = ans_obj.get("fast", [])
+        slow = ans_obj.get("slow", [])
+        if isinstance(fast, list):
+            out += [str(x) for x in fast]
+        if isinstance(slow, list):
+            out += [str(x) for x in slow]
+        return out
 
     if isinstance(ans_obj, dict):
         if "selected" in ans_obj:
@@ -93,70 +131,50 @@ def safe_get_selected(ans_obj: Any) -> List[str]:
     return []
 
 
-def question_type(q: Dict[str, Any]) -> str:
-    return str(q.get("type", "")).strip().lower()
-
-
-def is_multi(q: Dict[str, Any]) -> bool:
-    return question_type(q) in ("multi_choice", "multi_select", "multiple_choice", "checkbox")
-
-
-def is_single(q: Dict[str, Any]) -> bool:
-    return question_type(q) in ("single_choice", "single_select", "radio")
-
-
-def normalize_potential(x: str) -> Optional[str]:
+def token_to_ru(token: str, opt2pot: Dict[str, str]) -> Optional[str]:
     """
-    Normalize selected potential key to RU name (internal scoring keys).
-    Accepts:
-      - RU: "Цитрин"
-      - id: "citrine"
-      - common typos: "Гелиodор"
+    token can be:
+      - RU ("Цитрин")
+      - potential id ("citrine")
+      - option id ("opt_3")  -> via opt2pot
     """
-    if not isinstance(x, str):
+    if not isinstance(token, str):
         return None
 
-    s = x.strip()
+    t = token.strip()
 
-    # fix common mixed-letter typo
-    s = s.replace("Гелиodор", "Гелиодор").replace("Гелиodor", "Гелиодор")
+    # RU
+    if t in POTENTIALS_RU:
+        return t
 
-    # if already RU
-    if s in POTENTIALS_RU:
-        return s
+    # id
+    tid = t.lower()
+    if tid in ID2RU:
+        return ID2RU[tid]
 
-    # if id -> RU
-    sid = s.lower()
-    if sid in ID2RU:
-        return ID2RU[sid]
+    # opt_*
+    if t in opt2pot:
+        pid = opt2pot[t]
+        return ID2RU.get(pid)
+
+    # common typo fix
+    t2 = t.replace("Гелиodор", "Гелиодор").replace("Гелиodor", "Гелиодор")
+    if t2 in POTENTIALS_RU:
+        return t2
 
     return None
-
-
-def clamp_floor(x: float, floor: float = 0.0) -> float:
-    return x if x >= floor else floor
-
-
-@dataclass
-class PotentialScore:
-    strength: float = 0.0   # for row1 candidates
-    weakness: float = 0.0   # for row3 candidates
-    col_points: Dict[str, float] = None
-
-    def __post_init__(self):
-        if self.col_points is None:
-            self.col_points = {c: 0.0 for c in COLUMNS}
 
 
 def score_blocks(blocks_json: Dict[str, Any], answers_json: Dict[str, Any]) -> Dict[str, Any]:
     blocks = blocks_json.get("blocks", [])
 
-    # answers_map can be either {"answers": {...}} or direct mapping
     answers_map: Dict[str, Any] = (
         answers_json.get("answers")
         or answers_json.get("responses")
         or answers_json
     )
+
+    opt2pot, _ = build_option_map(blocks_json)
 
     scores: Dict[str, PotentialScore] = {p: PotentialScore() for p in POTENTIALS_RU}
 
@@ -181,11 +199,10 @@ def score_blocks(blocks_json: Dict[str, Any], answers_json: Dict[str, Any]) -> D
             invert_multiplier = float(q.get("invert_multiplier", invert_multiplier_default) or invert_multiplier_default)
 
             ans_obj = answers_map.get(qid)
-            selected_raw = safe_get_selected(ans_obj)
-            selected = [normalize_potential(x) for x in selected_raw]
+            tokens = extract_selected_tokens(ans_obj)
+            selected = [token_to_ru(t, opt2pot) for t in tokens]
             selected = [x for x in selected if x is not None]
 
-            # text-only question (no selection) => skip
             if not selected and not (is_single(q) or is_multi(q)):
                 continue
             if not selected:
@@ -193,44 +210,37 @@ def score_blocks(blocks_json: Dict[str, Any], answers_json: Dict[str, Any]) -> D
 
             per_item = (w / len(selected)) if is_multi(q) else w
 
-            # ---------------- Block 3 ----------------
+            # Block3 -> weakness (+), reverse reduces
             if is_block3:
                 row_target = q.get("row_target", None)
-                # weakness by default, reverse reduces weakness
                 sign = -1.0 if (qid in reverse_items or row_target == "validation_reverse") else 1.0
                 pts = per_item * anti_weight_multiplier * sign
                 for p in selected:
                     scores[p].weakness += pts
                 continue
 
-            # ---------------- Blocks 1/2/4 ----------------
-            # FIX: invert_score => add to weakness, not subtract from strength
+            # Blocks 1/2/4:
+            # invert_score -> weakness (+)
             if invert_score:
                 pts = per_item * invert_multiplier
                 for p in selected:
                     scores[p].weakness += pts
-                # we intentionally DO NOT add to col_points here (это не "столбец силы")
                 continue
 
-            # normal scoring => strength (+) and column points
+            # normal -> strength (+)
             pts = per_item
             for p in selected:
                 scores[p].strength += pts
                 if col in COLUMNS:
                     scores[p].col_points[col] += pts
 
-    # normalize weakness floor (reverse-items may reduce)
+    # floor weakness
     for p in POTENTIALS_RU:
         scores[p].weakness = clamp_floor(scores[p].weakness, 0.0)
 
-    # Row3: top3 weakness
     row3 = sorted(POTENTIALS_RU, key=lambda p: scores[p].weakness, reverse=True)[:3]
-
-    # Row1: top3 strength excluding row3
     row1_candidates = [p for p in POTENTIALS_RU if p not in row3]
     row1 = sorted(row1_candidates, key=lambda p: scores[p].strength, reverse=True)[:3]
-
-    # Row2: remaining
     row2 = [p for p in POTENTIALS_RU if p not in row1 and p not in row3]
 
     def dominant_column(p: str) -> str:
@@ -243,7 +253,6 @@ def score_blocks(blocks_json: Dict[str, Any], answers_json: Dict[str, Any]) -> D
         remaining = set(row)
         slots: Dict[str, Optional[str]] = {c: None for c in COLUMNS}
 
-        # greedily place best match per column
         for c in COLUMNS:
             best_p = None
             best_val = -1e18
@@ -256,7 +265,6 @@ def score_blocks(blocks_json: Dict[str, Any], answers_json: Dict[str, Any]) -> D
                 slots[c] = best_p
                 remaining.remove(best_p)
 
-        # fill leftovers if any
         if remaining:
             leftovers = sorted(list(remaining), key=lambda p: scores[p].strength, reverse=True)
             for c in COLUMNS:
