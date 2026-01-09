@@ -4,12 +4,14 @@ from pathlib import Path
 import importlib.util
 import streamlit as st
 
-# ----------------- AUTH (читаем auth.py из корня репо) -----------------
+# =========================
+#  Load auth.py safely
+# =========================
 ROOT = Path(__file__).resolve().parents[1]
 AUTH_PATH = ROOT / "auth.py"
 
 if not AUTH_PATH.exists():
-    st.error(f"Не найден auth.py в корне: {AUTH_PATH}")
+    st.error(f"Не найден auth.py в корне репозитория: {AUTH_PATH}")
     st.stop()
 
 spec = importlib.util.spec_from_file_location("neo_auth_local", str(AUTH_PATH))
@@ -22,18 +24,28 @@ if not hasattr(auth_mod, "require_master_password"):
 
 auth_mod.require_master_password()
 
-# ----------------- CONFIG -----------------
+# =========================
+#  Page config
+# =========================
 st.set_page_config(page_title="Master Panel — NEO", layout="wide")
 st.title("🛠️ Master Panel — NEO Potentials")
 
-BLOCKS_PATH = "neo_blocks.json"
 DATA_DIR = "data"
 CLIENTS_DIR = os.path.join(DATA_DIR, "clients")  # data/clients/<client_id>/
+BLOCKS_PATH = "neo_blocks.json"
 
-# ----------------- HELPERS -----------------
+
+# =========================
+#  Helpers
+# =========================
+def ensure_dirs():
+    os.makedirs(CLIENTS_DIR, exist_ok=True)
+
+
 def load_json(path: str):
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
+
 
 def safe_read_json(path: str):
     if not os.path.exists(path):
@@ -43,18 +55,19 @@ def safe_read_json(path: str):
     except Exception:
         return None
 
-def ensure_dirs():
-    os.makedirs(CLIENTS_DIR, exist_ok=True)
 
-def pot_ru_map_from_blocks(blocks_data: dict) -> dict:
+def potentials_map(blocks_data: dict) -> dict:
     """
-    Поддерживаем оба формата:
-    1) "potentials": {"amber":{"ru":"Янтарь"}, ...}
-    2) "potentials": [{"potential_id":"amber","name":"Янтарь"}, ...]
+    Вернёт map: potential_id -> RU name
+    Поддерживает 2 формата:
+    1) "potentials": { "amber": {"ru":"Янтарь"}, ... }
+    2) "potentials": [ {"id":"amber","name":"Янтарь"}, ... ]
     """
     pot = {}
-    p = blocks_data.get("potentials", {})
 
+    p = blocks_data.get("potentials")
+
+    # dict-format
     if isinstance(p, dict):
         for pid, meta in p.items():
             if isinstance(meta, dict):
@@ -62,6 +75,7 @@ def pot_ru_map_from_blocks(blocks_data: dict) -> dict:
                 if ru:
                     pot[str(pid)] = str(ru)
 
+    # list-format
     if isinstance(p, list):
         for item in p:
             if isinstance(item, dict):
@@ -70,166 +84,159 @@ def pot_ru_map_from_blocks(blocks_data: dict) -> dict:
                 if pid and ru:
                     pot[str(pid)] = str(ru)
 
+    # fallback (если в blocks ничего нет)
+    if not pot:
+        pot = {
+            "amber": "Янтарь",
+            "shungite": "Шунгит",
+            "citrine": "Цитрин",
+            "emerald": "Изумруд",
+            "ruby": "Рубин",
+            "garnet": "Гранат",
+            "sapphire": "Сапфир",
+            "heliodor": "Гелиодор",
+            "amethyst": "Аметист",
+        }
+
     return pot
 
-def prettify_pid(pid: str, pot_ru: dict) -> str:
-    # если в report уже RU — просто вернём
-    if isinstance(pid, str) and pid in ["Янтарь","Шунгит","Цитрин","Изумруд","Рубин","Гранат","Сапфир","Гелиодор","Аметист"]:
-        return pid
-    return pot_ru.get(str(pid), str(pid))
 
 def format_matrix_text(report: dict, pot_ru: dict) -> str:
     """
-    Хотим простой текст:
-    1 позиция — ряд 1 столбец perception — Янтарь
-    ...
-    Берём report["matrix_3x3"] если есть.
+    Красивый текст матрицы 3×3 по столбцам.
+    Ожидаем report["matrix"] формата:
+    {
+      "perception": {"row1": "citrine", "row2": "...", "row3": "..."},
+      "motivation": {...},
+      "instrument": {...}
+    }
     """
     if not report:
-        return "Отчёта пока нет (report.json не найден)."
+        return "Отчёта пока нет."
 
-    matrix = report.get("matrix_3x3")
+    matrix = report.get("matrix")
     if not isinstance(matrix, dict):
-        # fallback: по strength топ-9
-        scores = report.get("scores", {})
-        if not isinstance(scores, dict) or not scores:
-            return "В report.json нет matrix_3x3 и нет scores."
-        items = []
-        for k, v in scores.items():
-            if isinstance(v, dict):
-                items.append((k, float(v.get("strength", 0) or 0)))
-        items.sort(key=lambda x: x[1], reverse=True)
-        top9 = items[:9]
+        return (
+            "В report.json нет поля **matrix**.\n\n"
+            "Скорее всего у клиента старый report.json.\n"
+            "Решение: пройти тест заново и нажать **Завершить** (Finish), чтобы пересчитать отчёт."
+        )
 
-        def row_col(pos):
-            row = 1 if pos <= 3 else (2 if pos <= 6 else 3)
-            col = pos if pos <= 3 else (pos-3 if pos <= 6 else pos-6)
-            return row, col
-
-        lines = ["**Позиции (fallback по strength):**"]
-        for pos, (pid, val) in enumerate(top9, start=1):
-            row, col = row_col(pos)
-            lines.append(f"{pos}) **{prettify_pid(pid, pot_ru)}** — ряд {row}, столбец {col} (score {val:.3f})")
-        return "\n".join(lines)
-
-    # нормальный путь: matrix_3x3
-    col_names = {
+    col_ru = {
         "perception": "Восприятие",
         "motivation": "Мотивация",
         "instrument": "Инструмент",
     }
+    row_ru = {
+        "row1": "Ряд 1 (Силы)",
+        "row2": "Ряд 2 (Энергия)",
+        "row3": "Ряд 3 (Слабости)",
+    }
 
-    def row_to_positions(row_key: str, row_title: str, row_index: int):
-        row_map = matrix.get(row_key, {})
-        if not isinstance(row_map, dict):
-            return [f"**{row_title}:** нет данных"]
-        out = [f"**{row_title}:**"]
-        # порядок столбцов фиксируем
-        for col_i, col_key in enumerate(["perception","motivation","instrument"], start=1):
-            pid = row_map.get(col_key)
-            if not pid:
-                out.append(f"— ряд {row_index}, столбец {col_names[col_key]}: —")
-            else:
-                out.append(f"— ряд {row_index}, столбец {col_names[col_key]}: **{prettify_pid(pid, pot_ru)}**")
-        return out
+    order_cols = ["perception", "motivation", "instrument"]
+    order_rows = ["row1", "row2", "row3"]
 
     lines = []
-    lines += row_to_positions("row1_strengths", "Ряд 1 (Силы)", 1)
-    lines.append("")
-    lines += row_to_positions("row2_energy", "Ряд 2 (Энергия)", 2)
-    lines.append("")
-    lines += row_to_positions("row3_weaknesses", "Ряд 3 (Слабости)", 3)
+    lines.append("## Результат (матрица 3×3)\n")
+
+    for col in order_cols:
+        lines.append(f"### {col_ru.get(col, col)}")
+        col_block = matrix.get(col, {}) if isinstance(matrix.get(col), dict) else {}
+
+        for row in order_rows:
+            pid = col_block.get(row)
+            if not pid:
+                lines.append(f"- **{row_ru[row]}:** —")
+            else:
+                name = pot_ru.get(str(pid), str(pid))
+                lines.append(f"- **{row_ru[row]}:** **{name}**")
+        lines.append("")
 
     return "\n".join(lines)
 
-def list_clients() -> list:
-    """
-    Ищем папки data/clients/<client_id>/
-    Клиент считается существующим, если есть responses.json или report.json
-    """
-    ensure_dirs()
-    out = []
-    for cid in sorted(os.listdir(CLIENTS_DIR)):
-        cdir = os.path.join(CLIENTS_DIR, cid)
-        if not os.path.isdir(cdir):
-            continue
-        has_any = os.path.exists(os.path.join(cdir, "responses.json")) or os.path.exists(os.path.join(cdir, "report.json"))
-        if has_any:
-            out.append(cid)
-    return out
 
-def read_client_profile(client_id: str) -> dict:
+def list_clients():
     """
-    Берём имя/телефон/почту из responses.json -> respondent (или respondent_id)
+    Возвращает список client_id (папки) из data/clients
     """
-    cdir = os.path.join(CLIENTS_DIR, client_id)
-    resp = safe_read_json(os.path.join(cdir, "responses.json")) or {}
-    respondent = resp.get("respondent") or {}
-    # возможные ключи
-    name = respondent.get("name") or respondent.get("full_name") or ""
-    phone = respondent.get("phone") or ""
-    email = respondent.get("email") or ""
-    return {"name": name, "phone": phone, "email": email}
+    if not os.path.exists(CLIENTS_DIR):
+        return []
+    ids = []
+    for name in sorted(os.listdir(CLIENTS_DIR)):
+        p = os.path.join(CLIENTS_DIR, name)
+        if os.path.isdir(p):
+            ids.append(name)
+    return ids
 
-# ----------------- UI -----------------
+
+# =========================
+#  UI
+# =========================
+ensure_dirs()
+
 blocks_data = safe_read_json(BLOCKS_PATH) or {}
-pot_ru = pot_ru_map_from_blocks(blocks_data)
+pot_ru = potentials_map(blocks_data)
 
-st.subheader("Клиенты")
+st.subheader("1) Клиенты")
 
 client_ids = list_clients()
 if not client_ids:
-    st.info("Пока нет клиентов. Клиенты появятся после прохождения диагностики и нажатия «Завершить».")
+    st.info("Пока нет клиентов. Клиенты появятся после прохождения диагностики на главной странице (после «Завершить»).")
     st.stop()
 
-# сформируем красивый список
-labels = []
-label_to_id = {}
+# читаем профили
+clients = []
 for cid in client_ids:
-    prof = read_client_profile(cid)
-    label = (prof.get("name") or "").strip()
-    if label:
-        label = f"{label}  —  {cid}"
-    else:
-        label = cid
-    labels.append(label)
-    label_to_id[label] = cid
+    profile = safe_read_json(os.path.join(CLIENTS_DIR, cid, "profile.json")) or {}
+    label = profile.get("name") or cid
+    clients.append((label, cid))
 
-selected_label = st.selectbox("Выбери клиента:", labels)
-selected_cid = label_to_id[selected_label]
+clients.sort(key=lambda x: x[0].lower())
+
+selected_label = st.selectbox("Выбери клиента:", [c[0] for c in clients], index=0)
+selected_cid = dict(clients)[selected_label]
 
 colA, colB = st.columns([1, 2])
 
 with colA:
     st.subheader("Профиль")
-    prof = read_client_profile(selected_cid)
-    st.write(f"**Имя:** {prof.get('name') or '—'}")
-    st.write(f"**Телефон:** {prof.get('phone') or '—'}")
-    st.write(f"**Email:** {prof.get('email') or '—'}")
+    profile_path = os.path.join(CLIENTS_DIR, selected_cid, "profile.json")
+    prof = safe_read_json(profile_path) or {}
+    st.write(f"**Имя:** {prof.get('name', '—')}")
+    st.write(f"**Телефон:** {prof.get('phone', '—')}")
     st.write(f"**client_id:** `{selected_cid}`")
+
+    st.divider()
+    st.caption("Файлы клиента:")
+    st.code("\n".join(sorted(os.listdir(os.path.join(CLIENTS_DIR, selected_cid)))))
 
 with colB:
     st.subheader("Результат")
     report_path = os.path.join(CLIENTS_DIR, selected_cid, "report.json")
     report = safe_read_json(report_path)
 
-    text = format_matrix_text(report, pot_ru)
-    st.markdown(text)
+    if not report:
+        st.warning("report.json пока нет. Клиент должен пройти тест до конца и нажать «Завершить».")
+    else:
+        text = format_matrix_text(report, pot_ru)
+        st.markdown(text)
 
-    st.download_button(
-        "⬇️ Скачать результат (txt)",
-        data=text.encode("utf-8"),
-        file_name=f"{selected_cid}_result.txt",
-        mime="text/plain"
-    )
+        st.download_button(
+            "⬇️ Скачать результат (txt)",
+            data=text.encode("utf-8"),
+            file_name=f"{selected_cid}_matrix.txt",
+            mime="text/plain",
+            use_container_width=True,
+        )
 
 st.divider()
 
-with st.expander("⚙️ Опционально: редактор neo_blocks.json", expanded=False):
+# Опционально: редактор blocks — спрятан
+with st.expander("⚙️ (Опционально) Редактор neo_blocks.json", expanded=False):
     if not os.path.exists(BLOCKS_PATH):
         st.error(f"Не найден {BLOCKS_PATH}")
     else:
-        raw = safe_read_json(BLOCKS_PATH) or {}
+        raw = load_json(BLOCKS_PATH)
         text_default = json.dumps(raw, ensure_ascii=False, indent=2)
         text = st.text_area("neo_blocks.json", value=text_default, height=420)
 
@@ -242,6 +249,7 @@ with st.expander("⚙️ Опционально: редактор neo_blocks.jso
                 except Exception as e:
                     st.error("JSON невалидный ❌")
                     st.code(str(e))
+
         with c2:
             if st.button("💾 Save neo_blocks.json"):
                 try:
